@@ -1,0 +1,1724 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dynasty FC - Playable Prototype</title>
+  <style>
+    :root {
+      --grass: #2f8d58;
+      --grass-dark: #226b45;
+      --line: rgba(255,255,255,.78);
+      --bg: #12151b;
+      --panel: #202631;
+      --panel-2: #2b3340;
+      --ink: #f5f0e7;
+      --muted: #b7c0cb;
+      --gold: #f2bc4f;
+      --red: #e25e57;
+      --blue: #5ab7df;
+      --green: #65c48d;
+      --black: #0f1218;
+      --shadow: 0 18px 48px rgba(0,0,0,.28);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(47,141,88,.18), transparent 35%),
+        linear-gradient(160deg, #11151c 0%, #1c232c 55%, #101318 100%);
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: 7px;
+      padding: 9px 12px;
+      color: var(--black);
+      background: var(--gold);
+      cursor: pointer;
+      font-weight: 900;
+      transition: transform .12s ease, filter .12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .ghost {
+      color: var(--ink);
+      background: transparent;
+      border-color: rgba(255,255,255,.16);
+    }
+
+    .danger {
+      color: #fff;
+      background: var(--red);
+    }
+
+    .shell {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 330px minmax(560px, 1fr) 370px;
+      gap: 14px;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 4px 2px 10px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: .94;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      line-height: 1.42;
+      max-width: 810px;
+      margin-top: 8px;
+    }
+
+    .phase-strip {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: 620px;
+    }
+
+    .phase {
+      border: 1px solid rgba(255,255,255,.15);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .phase.active {
+      color: var(--black);
+      border-color: var(--gold);
+      background: var(--gold);
+    }
+
+    .panel, .stat, .card, .modal-box {
+      background: rgba(32, 38, 49, .94);
+      border: 1px solid rgba(255,255,255,.09);
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      border-radius: 8px;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .left, .center, .right {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat {
+      min-height: 62px;
+      border-radius: 8px;
+      padding: 9px 10px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: 950;
+      margin-top: 3px;
+    }
+
+    .team-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .player-card {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(0,0,0,.16);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 950;
+      color: var(--black);
+      background: var(--blue);
+    }
+
+    .avatar.gk { background: var(--green); }
+
+    .player-name {
+      font-weight: 950;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .bars {
+      display: grid;
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 52px 1fr 24px;
+      gap: 6px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .bar {
+      height: 7px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.08);
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      background: var(--gold);
+    }
+
+    .bar.speed span { background: var(--blue); }
+    .bar.shot span { background: var(--red); }
+    .bar.def span { background: var(--green); }
+
+    .pitch-wrap {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #1e6e45;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.12);
+      aspect-ratio: 16 / 10;
+      min-height: 380px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: var(--grass);
+    }
+
+    .scoreboard {
+      position: absolute;
+      inset: 12px 12px auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .score-pill {
+      background: rgba(15,18,24,.82);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 8px;
+      padding: 8px 11px;
+      font-weight: 950;
+      min-width: 122px;
+      text-align: center;
+    }
+
+    .timer {
+      background: var(--gold);
+      color: var(--black);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-weight: 950;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .match-banner {
+      position: absolute;
+      inset: auto 16px 16px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: end;
+      pointer-events: none;
+    }
+
+    .hint {
+      background: rgba(15,18,24,.82);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 8px;
+      padding: 9px 11px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      max-width: 470px;
+    }
+
+    .notice {
+      color: var(--black);
+      background: var(--gold);
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-weight: 950;
+      min-width: 180px;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 7px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: rgba(0,0,0,.22);
+      outline: none;
+    }
+
+    input[type="color"] {
+      width: 52px;
+      height: 38px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 7px;
+      padding: 2px;
+      background: rgba(0,0,0,.2);
+    }
+
+    .custom-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .swatch-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .front-office {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .card {
+      border-radius: 8px;
+      padding: 11px;
+      display: grid;
+      gap: 8px;
+      background: rgba(43,51,64,.96);
+      min-width: 0;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .tag {
+      width: fit-content;
+      padding: 3px 7px;
+      border-radius: 999px;
+      color: var(--black);
+      background: var(--blue);
+      font-size: 11px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+
+    .tag.gold { background: var(--gold); }
+    .tag.red { background: var(--red); color: #fff; }
+    .tag.green { background: var(--green); }
+
+    .board {
+      display: grid;
+      gap: 7px;
+      max-height: 320px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 1fr 42px 42px 42px;
+      gap: 7px;
+      align-items: center;
+      padding: 8px;
+      border-radius: 7px;
+      background: rgba(0,0,0,.16);
+      font-size: 12px;
+    }
+
+    .table-row.user {
+      outline: 2px solid var(--gold);
+    }
+
+    .log {
+      height: 250px;
+      overflow: auto;
+      display: grid;
+      gap: 8px;
+      padding-right: 5px;
+      align-content: start;
+    }
+
+    .log-entry {
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 13px;
+      padding: 8px;
+      border-left: 3px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.15);
+      border-radius: 0 7px 7px 0;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.64);
+      padding: 16px;
+    }
+
+    .modal.open { display: flex; }
+
+    .modal-box {
+      width: min(960px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 10px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      width: min(560px, calc(100% - 32px));
+      display: none;
+      z-index: 30;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: var(--gold);
+      color: var(--black);
+      box-shadow: var(--shadow);
+      font-weight: 950;
+    }
+
+    .toast.show { display: block; }
+
+    @media (max-width: 1220px) {
+      .shell { grid-template-columns: 1fr 1fr; }
+      .center { grid-column: 1 / -1; order: 1; }
+      .left { order: 2; }
+      .right { order: 3; }
+      header { align-items: stretch; flex-direction: column; }
+      .phase-strip { justify-content: flex-start; max-width: none; }
+    }
+
+    @media (max-width: 780px) {
+      .shell { grid-template-columns: 1fr; padding: 12px; }
+      .center, .left, .right { grid-column: auto; order: initial; }
+      .front-office, .stats { grid-template-columns: 1fr; }
+      .pitch-wrap { min-height: 300px; }
+      .match-banner { align-items: stretch; flex-direction: column; }
+      .score-pill { min-width: 92px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Dynasty FC</h1>
+        <p class="subtitle">A tiny-roster soccer dynasty prototype: control your field star in 90-second arcade matches, manage one goalkeeper, bid on talent, draft replacements, and build a legacy across generations.</p>
+      </div>
+      <div class="phase-strip" id="phaseStrip"></div>
+    </header>
+
+    <aside class="left">
+      <section class="panel">
+        <h2>Franchise</h2>
+        <div class="stats">
+          <div class="stat"><div class="label">Money</div><div class="value" id="money">$0</div></div>
+          <div class="stat"><div class="label">Dev Pts</div><div class="value" id="dev">0</div></div>
+          <div class="stat"><div class="label">Reputation</div><div class="value" id="rep">0</div></div>
+          <div class="stat"><div class="label">Legacy</div><div class="value" id="legacy">0</div></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Your Two Players</h2>
+        <div class="team-card" id="roster"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Season Controls</h2>
+        <div class="controls">
+          <button id="startMatchBtn">Play Next Match</button>
+          <button id="shootBtn" class="ghost">Shoot / Tackle</button>
+          <button class="ghost" id="trainBtn">Develop Player</button>
+          <button class="ghost" id="contractBtn">Contracts</button>
+          <button class="ghost" id="marketBtn">Bids & Trades</button>
+          <button class="ghost" id="draftBtn">Draft Board</button>
+          <button class="ghost" id="customizeBtn">Customize Club</button>
+          <button class="danger" id="resetBtn">Restart Dynasty</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="center">
+      <section class="pitch-wrap">
+        <canvas id="pitch" width="960" height="600" tabindex="0" aria-label="Dynasty FC match field"></canvas>
+        <div class="scoreboard">
+          <div class="score-pill" id="homeScore">Crown City 0</div>
+          <div class="timer" id="timer">90</div>
+          <div class="score-pill" id="awayScore">Opponent 0</div>
+        </div>
+        <div class="match-banner">
+          <div class="hint">Move with WASD or arrows. Hold close to the ball to possess it. Press Space to shoot or tackle. Shots are strongest in the attacking third and from central lanes.</div>
+          <div class="notice" id="matchNotice">Front Office</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Front Office</h2>
+        <div class="front-office" id="frontOffice"></div>
+      </section>
+    </main>
+
+    <aside class="right">
+      <section class="panel">
+        <h2>League Table</h2>
+        <div class="board" id="standings"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Dynasty Log</h2>
+        <div class="log" id="log"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Legacy Records</h2>
+        <div class="board" id="records"></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h2 id="modalTitle">Modal</h2>
+          <p class="small" id="modalText"></p>
+        </div>
+        <button class="ghost" id="closeModal">Close</button>
+      </div>
+      <div class="modal-grid" id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const canvas = document.getElementById('pitch');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    const STRIPE_W = W / 10;
+    const FIELD_MIN_X = STRIPE_W * 2;
+    const FIELD_MAX_X = W - STRIPE_W * 2;
+    const phases = ['Draft', 'Contracts', 'Market', 'Regular Season', 'Playoffs', 'Legacy'];
+    const keys = {};
+
+    const firstNames = ['Mateo', 'Jonas', 'Rafa', 'Silas', 'Owen', 'Nico', 'Theo', 'Andre', 'Felix', 'Dante', 'Arlo', 'Kian', 'Hugo', 'Luca', 'Milan', 'Eli'];
+    const lastNames = ['Vega', 'Storm', 'Keller', 'Moreno', 'Price', 'Hale', 'Santos', 'Reed', 'Cross', 'Bishop', 'Vale', 'Ito', 'Madsen', 'Stone', 'Rossi', 'Park'];
+    const teams = ['Crown City', 'Harbor SC', 'North Vale', 'Metro Lions', 'Foundry FC', 'Riverside', 'Atlas Town', 'Beacon United', 'Kingsport', 'Prairie Aces', 'Old Mill', 'Summit FC', 'Redwood', 'Iron Coast', 'Capital 90', 'Bluegate'];
+
+    const state = {
+      season: 1,
+      phase: 'Regular Season',
+      week: 1,
+      money: 44,
+      dev: 5,
+      rep: 12,
+      legacy: 0,
+      titles: 0,
+      streak: 0,
+      brand: {
+        name: 'Crown City',
+        primary: '#5ab7df',
+        secondary: '#f2bc4f',
+        keeper: '#65c48d',
+        badge: 'CC'
+      },
+      team: null,
+      league: [],
+      freeAgents: [],
+      draft: [],
+      log: [],
+      match: null,
+      controlsEnabled: false,
+      lastTime: 0
+    };
+    window.dynastyState = state;
+
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function makePlayer(role, quality = 50, age = rand(19, 31)) {
+      const base = Math.max(28, quality + rand(-10, 10));
+      const prime = age >= 24 && age <= 29 ? 5 : age >= 32 ? -7 : 0;
+      const player = {
+        id: Math.random().toString(36).slice(2, 10),
+        name: `${pick(firstNames)} ${pick(lastNames)}`,
+        role,
+        age,
+        salary: Math.max(4, Math.round((base + prime) / 8)),
+        years: rand(1, 3),
+        goals: 0,
+        saves: 0,
+        awards: 0,
+        hof: false,
+        retired: false
+      };
+      if (role === 'Field') {
+        player.speed = clamp(Math.round(base + rand(-8, 10) + prime), 20, 92);
+        player.shot = clamp(Math.round(base + rand(-6, 12) + prime), 20, 94);
+        player.dribble = clamp(Math.round(base + rand(-5, 12) + prime), 20, 94);
+        player.defense = clamp(Math.round(base + rand(-8, 6) + prime), 18, 88);
+        player.keeper = 10;
+      } else {
+        player.speed = clamp(Math.round(base + rand(-10, 5) + prime), 18, 82);
+        player.shot = 12;
+        player.dribble = 18;
+        player.defense = clamp(Math.round(base + rand(-4, 10) + prime), 25, 92);
+        player.keeper = clamp(Math.round(base + rand(-3, 14) + prime), 25, 96);
+      }
+      return player;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function rating(player) {
+      if (player.role === 'Field') return Math.round((player.speed + player.shot + player.dribble + player.defense) / 4);
+      return Math.round((player.keeper * 1.5 + player.defense + player.speed * .5) / 3);
+    }
+
+    function teamPower(team) {
+      return rating(team.field) + rating(team.keeper) + Math.floor(team.rep / 5);
+    }
+
+    function init() {
+      state.season = 1;
+      state.phase = 'Regular Season';
+      state.week = 1;
+      state.money = 44;
+      state.dev = 5;
+      state.rep = 12;
+      state.legacy = 0;
+      state.titles = 0;
+      state.streak = 0;
+      state.brand = {
+        name: 'Crown City',
+        primary: '#5ab7df',
+        secondary: '#f2bc4f',
+        keeper: '#65c48d',
+        badge: 'CC'
+      };
+      state.log = [];
+      state.team = {
+        id: 'user',
+        name: state.brand.name,
+        wins: 0,
+        losses: 0,
+        gf: 0,
+        ga: 0,
+        rep: 12,
+        field: makePlayer('Field', 62, 22),
+        keeper: makePlayer('Keeper', 58, 25),
+        picks: 1,
+        money: state.money,
+        user: true
+      };
+      state.league = [state.team];
+      for (let i = 1; i < teams.length; i++) {
+        state.league.push({
+          id: `ai-${i}`,
+          name: teams[i],
+          wins: 0,
+          losses: 0,
+          gf: 0,
+          ga: 0,
+          rep: rand(8, 22),
+          field: makePlayer('Field', rand(45, 75)),
+          keeper: makePlayer('Keeper', rand(45, 75)),
+          picks: 1,
+          money: rand(25, 55),
+          user: false
+        });
+      }
+      state.freeAgents = [makePlayer('Field', 68, 27), makePlayer('Keeper', 66, 26), makePlayer('Field', 58, 22), makePlayer('Keeper', 54, 31)];
+      state.draft = makeDraft();
+      state.match = null;
+      log('Crown City enters the league with a two-player roster and a dangerous amount of hope.');
+      log('Goal: win championships across generations. One match is 90 seconds. One season is six regular matches plus playoffs.');
+      render();
+      drawIdlePitch();
+    }
+
+    function makeDraft() {
+      return Array.from({ length: 8 }, (_, i) => {
+        const role = i % 2 === 0 ? 'Field' : 'Keeper';
+        const prospect = makePlayer(role, rand(50, 75), rand(18, 21));
+        prospect.ceiling = clamp(rating(prospect) + rand(8, 22), 55, 96);
+        return prospect;
+      }).sort((a, b) => b.ceiling - a.ceiling);
+    }
+
+    function log(message) {
+      state.log.unshift(message);
+      state.log = state.log.slice(0, 36);
+    }
+
+    function toast(message) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function render() {
+      document.getElementById('money').textContent = `$${state.money}M`;
+      document.getElementById('dev').textContent = state.dev;
+      document.getElementById('rep').textContent = state.rep;
+      document.getElementById('legacy').textContent = state.legacy;
+      renderPhases();
+      renderRoster();
+      renderFrontOffice();
+      renderStandings();
+      renderRecords();
+      renderLog();
+      updateButtons();
+    }
+
+    function renderPhases() {
+      document.getElementById('phaseStrip').innerHTML = phases.map(phase => `<span class="phase ${phase === state.phase ? 'active' : ''}">${phase}</span>`).join('');
+    }
+
+    function statBar(label, value, cls = '') {
+      return `<div class="bar-row"><span>${label}</span><div class="bar ${cls}"><span style="width:${clamp(value, 0, 100)}%"></span></div><span>${value}</span></div>`;
+    }
+
+    function playerCard(player) {
+      const roleTag = player.role === 'Keeper' ? 'GK' : 'FP';
+      const avatarStyle = player.role === 'Keeper'
+        ? `style="background:${state.brand.keeper}"`
+        : `style="background:linear-gradient(135deg, ${state.brand.primary}, ${state.brand.secondary})"`;
+      return `
+        <div class="player-card">
+          <div class="avatar ${player.role === 'Keeper' ? 'gk' : ''}" ${avatarStyle}>${roleTag}</div>
+          <div>
+            <div class="player-name">${player.name}</div>
+            <div class="small">${player.role} | Age ${player.age} | ${rating(player)} OVR | $${player.salary}M / ${player.years} yr</div>
+            <div class="bars">
+              ${statBar('SPD', player.speed, 'speed')}
+              ${player.role === 'Field' ? statBar('SHT', player.shot, 'shot') + statBar('DRB', player.dribble, '') : statBar('SAVE', player.keeper, 'def')}
+              ${statBar('DEF', player.defense, 'def')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRoster() {
+      document.getElementById('roster').innerHTML = playerCard(state.team.field) + playerCard(state.team.keeper);
+    }
+
+    function renderFrontOffice() {
+      const opponent = nextOpponent();
+      const payroll = state.team.field.salary + state.team.keeper.salary;
+      document.getElementById('frontOffice').innerHTML = `
+        <div class="card">
+          <div class="card-head"><strong>Next Match</strong><span class="tag gold">Week ${state.week}</span></div>
+          <p class="small">${opponent ? `${state.team.name} vs ${opponent.name}` : 'Regular season complete. Advance to playoffs.'}</p>
+          <p class="small">Your power ${teamPower(state.team)} | Opponent power ${opponent ? teamPower(opponent) : '-'}</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><strong>Payroll</strong><span class="tag">$${payroll}M</span></div>
+          <p class="small">Contracts tick down after each season. Expiring players can hit bidding wars unless renewed.</p>
+          <p class="small">Cap pressure is light in this prototype, but low money blocks bids, trades, and renewals.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><strong>Development Plan</strong><span class="tag green">${state.dev} pts</span></div>
+          <p class="small">Spend dev points deterministically. Young players benefit most, but veterans can still specialize.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><strong>Dynasty Target</strong><span class="tag red">${state.titles} titles</span></div>
+          <p class="small">Legacy comes from titles, playoff wins, records, awards, and keeping stars productive across eras.</p>
+        </div>
+      `;
+    }
+
+    function renderStandings() {
+      const sorted = [...state.league].sort((a, b) => b.wins - a.wins || (b.gf - b.ga) - (a.gf - a.ga));
+      document.getElementById('standings').innerHTML = `
+        <div class="table-row" style="font-weight:950;color:var(--muted)"><span>Team</span><span>W</span><span>L</span><span>GD</span></div>
+        ${sorted.map(team => `<div class="table-row ${team.user ? 'user' : ''}"><span>${team.name}</span><span>${team.wins}</span><span>${team.losses}</span><span>${team.gf - team.ga}</span></div>`).join('')}
+      `;
+    }
+
+    function renderRecords() {
+      const allPlayers = state.league.flatMap(team => [team.field, team.keeper]);
+      const topScorer = [...allPlayers].sort((a, b) => b.goals - a.goals)[0];
+      const topSaver = [...allPlayers].sort((a, b) => b.saves - a.saves)[0];
+      document.getElementById('records').innerHTML = `
+        <div class="card"><strong>Championships</strong><p class="small">Crown City: ${state.titles}</p></div>
+        <div class="card"><strong>Dynasty Streak</strong><p class="small">${state.streak} straight titles</p></div>
+        <div class="card"><strong>Top Scorer</strong><p class="small">${topScorer?.name || '-'}: ${topScorer?.goals || 0} goals</p></div>
+        <div class="card"><strong>Top Keeper</strong><p class="small">${topSaver?.name || '-'}: ${topSaver?.saves || 0} saves</p></div>
+        <div class="card"><strong>Season</strong><p class="small">Year ${state.season}, ${state.phase}</p></div>
+      `;
+    }
+
+    function renderLog() {
+      document.getElementById('log').innerHTML = state.log.map(entry => `<div class="log-entry">${entry}</div>`).join('');
+    }
+
+    function updateButtons() {
+      const inMatch = !!state.match?.active;
+      document.getElementById('startMatchBtn').disabled = inMatch || (state.phase !== 'Regular Season' && state.phase !== 'Playoffs');
+      document.getElementById('shootBtn').disabled = !inMatch;
+      document.getElementById('trainBtn').disabled = inMatch || state.dev <= 0;
+      document.getElementById('contractBtn').disabled = inMatch;
+      document.getElementById('marketBtn').disabled = inMatch;
+      document.getElementById('draftBtn').disabled = inMatch;
+      document.getElementById('customizeBtn').disabled = inMatch;
+    }
+
+    function nextOpponent() {
+      if (state.phase === 'Playoffs') {
+        return state.playoffOpponent || [...state.league].filter(t => !t.user).sort((a, b) => teamPower(b) - teamPower(a))[0];
+      }
+      const ai = state.league.filter(t => !t.user);
+      return ai[(state.week - 1) % ai.length] || null;
+    }
+
+    function startMatch() {
+      const opponent = nextOpponent();
+      if (!opponent) return toast('No opponent available.');
+      state.controlsEnabled = true;
+      state.match = {
+        active: true,
+        playoff: state.phase === 'Playoffs',
+        opponent,
+        time: 90,
+        home: 0,
+        away: 0,
+        message: 'Kickoff',
+        ball: { x: W * .34, y: H * .5, vx: 0, vy: 0, owner: 'user', release: 0 },
+        user: { x: W * .33, y: H * .5, r: 15 },
+        userGk: { x: 52, y: H * .5, r: 17 },
+        ai: { x: W * .66, y: H * .5, r: 15 },
+        aiGk: { x: W - 52, y: H * .5, r: 17 },
+        cooldown: 0,
+        aiCooldown: 0
+      };
+      document.getElementById('matchNotice').textContent = 'Kickoff';
+      log(`${state.phase === 'Playoffs' ? 'Playoff' : 'Regular season'} match starts against ${opponent.name}.`);
+      render();
+      canvas.focus();
+    }
+
+    function finishMatch() {
+      const m = state.match;
+      m.active = false;
+      state.controlsEnabled = false;
+      let result = 'draw';
+      if (m.home > m.away) result = 'win';
+      if (m.home < m.away) result = 'loss';
+      if (m.playoff && result === 'draw') {
+        const edge = teamPower(state.team) + rand(0, 8) >= teamPower(m.opponent) + rand(0, 8);
+        if (edge) { m.home++; result = 'win'; }
+        else { m.away++; result = 'loss'; }
+      }
+      state.team.gf += m.home;
+      state.team.ga += m.away;
+      m.opponent.gf += m.away;
+      m.opponent.ga += m.home;
+      if (result === 'win') {
+        state.team.wins++;
+        m.opponent.losses++;
+        const repGain = m.playoff ? 5 : 2;
+        state.rep += repGain;
+        state.dev += 2 + Math.min(3, m.home);
+        state.money += m.playoff ? 7 : 4;
+        state.legacy += m.playoff ? 8 : 2;
+        log(`Final: ${state.team.name} ${m.home}, ${m.opponent.name} ${m.away}. Win. +${repGain} reputation and development momentum.`);
+      } else if (result === 'loss') {
+        state.team.losses++;
+        m.opponent.wins++;
+        state.dev += 1;
+        state.money += 2;
+        state.streak = 0;
+        log(`Final: ${state.team.name} ${m.home}, ${m.opponent.name} ${m.away}. Loss. The staff still banks 1 development point.`);
+      } else {
+        state.money += 3;
+        state.dev += 1;
+        log(`Final: ${state.team.name} ${m.home}, ${m.opponent.name} ${m.away}. Draw. The table stays tight.`);
+      }
+      simLeagueWeek(m.opponent);
+      if (m.playoff) handlePlayoffResult(result);
+      else advanceRegularSeason();
+      state.match = null;
+      render();
+      drawIdlePitch();
+    }
+
+    function advanceRegularSeason() {
+      state.week++;
+      if (state.week > 6) {
+        const seeded = [...state.league].sort((a, b) => b.wins - a.wins || (b.gf - b.ga) - (a.gf - a.ga));
+        if (seeded.slice(0, 8).some(t => t.user)) {
+          state.phase = 'Playoffs';
+          state.playoffRound = 1;
+          state.playoffOpponent = seeded.find(t => !t.user);
+          log('Crown City qualifies for the playoffs. Single elimination begins now.');
+        } else {
+          log('Crown City misses the playoffs. The offseason begins early.');
+          startOffseason(false);
+        }
+      }
+    }
+
+    function handlePlayoffResult(result) {
+      if (result !== 'win') {
+        log('Crown City is eliminated from the playoffs. The offseason begins.');
+        startOffseason(false);
+        return;
+      }
+      state.playoffRound++;
+      if (state.playoffRound > 3) {
+        state.titles++;
+        state.streak++;
+        state.legacy += 30 + state.streak * 6;
+        state.money += 14;
+        state.rep += 10;
+        log(`Champions. Crown City lifts title ${state.titles}, and the dynasty meter surges.`);
+        startOffseason(true);
+        return;
+      }
+      const contenders = state.league.filter(t => !t.user).sort((a, b) => teamPower(b) - teamPower(a));
+      state.playoffOpponent = contenders[state.playoffRound - 1] || contenders[0];
+      log(`Playoff round ${state.playoffRound} awaits: ${state.playoffOpponent.name}.`);
+    }
+
+    function simLeagueWeek(exclude) {
+      const ai = state.league.filter(t => !t.user && t.id !== exclude.id);
+      for (let i = 0; i < ai.length - 1; i += 2) {
+        const a = ai[i];
+        const b = ai[i + 1];
+        const aGoals = Math.max(0, Math.round((teamPower(a) + rand(-15, 15)) / 35));
+        const bGoals = Math.max(0, Math.round((teamPower(b) + rand(-15, 15)) / 35));
+        a.gf += aGoals; a.ga += bGoals; b.gf += bGoals; b.ga += aGoals;
+        if (aGoals >= bGoals) { a.wins++; b.losses++; } else { b.wins++; a.losses++; }
+        a.field.goals += aGoals;
+        b.field.goals += bGoals;
+        a.keeper.saves += rand(0, 4);
+        b.keeper.saves += rand(0, 4);
+      }
+    }
+
+    function startOffseason(wonTitle) {
+      state.phase = 'Contracts';
+      state.week = 1;
+      state.playoffOpponent = null;
+      state.playoffRound = 0;
+      agePlayers();
+      expireContracts();
+      state.freeAgents.push(makePlayer('Field', rand(58, 78), rand(21, 30)), makePlayer('Keeper', rand(58, 78), rand(21, 32)));
+      state.draft = makeDraft();
+      state.dev += wonTitle ? 5 : 3;
+      render();
+    }
+
+    function agePlayers() {
+      state.league.forEach(team => {
+        ['field', 'keeper'].forEach(slot => {
+          const p = team[slot];
+          p.age++;
+          p.years--;
+          if (p.age <= 24) {
+            p.speed = clamp(p.speed + 2, 20, 99);
+            p.shot = clamp(p.shot + (p.role === 'Field' ? 2 : 0), 10, 99);
+            p.dribble = clamp(p.dribble + (p.role === 'Field' ? 2 : 0), 10, 99);
+            p.defense = clamp(p.defense + 1, 10, 99);
+            p.keeper = clamp(p.keeper + (p.role === 'Keeper' ? 2 : 0), 10, 99);
+          }
+          if (p.age >= 32) {
+            p.speed = clamp(p.speed - 3, 10, 99);
+            p.shot = clamp(p.shot - 1, 10, 99);
+            p.dribble = clamp(p.dribble - 2, 10, 99);
+            p.defense = clamp(p.defense - 1, 10, 99);
+            p.keeper = clamp(p.keeper - 2, 10, 99);
+          }
+          if (p.age >= 36 || (p.age >= 33 && rating(p) < 45)) {
+            p.retired = true;
+            if (p.goals >= 18 || p.saves >= 30 || p.awards > 1) {
+              p.hof = true;
+              if (team.user) state.legacy += 12;
+            }
+            team[slot] = makePlayer(p.role, rand(44, 58), rand(20, 27));
+            if (team.user) log(`${p.name} retires. A replacement-level ${p.role.toLowerCase()} joins until you upgrade.`);
+          }
+        });
+      });
+    }
+
+    function expireContracts() {
+      ['field', 'keeper'].forEach(slot => {
+        const p = state.team[slot];
+        if (p.years <= 0) {
+          state.freeAgents.push(p);
+          state.team[slot] = makePlayer(p.role, 46, rand(20, 28));
+          log(`${p.name}'s contract expired. They enter free agency unless you win the bidding war.`);
+        }
+      });
+    }
+
+    function openTraining() {
+      const players = [state.team.field, state.team.keeper];
+      openModal('Develop Player', 'Spend one development point for a deterministic stat increase.', players.map(p => `
+        <div class="card">
+          <div class="card-head"><strong>${p.name}</strong><span class="tag">${p.role}</span></div>
+          <p class="small">Age ${p.age}, ${rating(p)} OVR. Younger players are the best long-term value.</p>
+          <button onclick="train('${p.id}', 'speed')">+ Speed</button>
+          ${p.role === 'Field' ? `<button onclick="train('${p.id}', 'shot')">+ Shooting</button><button onclick="train('${p.id}', 'dribble')">+ Dribbling</button>` : `<button onclick="train('${p.id}', 'keeper')">+ Saves</button>`}
+          <button onclick="train('${p.id}', 'defense')">+ Defense</button>
+        </div>
+      `).join(''));
+    }
+
+    function train(playerId, stat) {
+      if (state.dev <= 0) return toast('No development points available.');
+      const player = [state.team.field, state.team.keeper].find(p => p.id === playerId);
+      if (!player) return;
+      const growth = player.age <= 23 ? 4 : player.age <= 29 ? 3 : 2;
+      player[stat] = clamp(player[stat] + growth, 10, 99);
+      state.dev--;
+      log(`${player.name} improves ${stat} by ${growth}.`);
+      render();
+      openTraining();
+    }
+
+    function openContracts() {
+      const players = [state.team.field, state.team.keeper];
+      openModal('Contracts', 'Renew players before they reach the market. Higher overall means a higher salary.', players.map(p => {
+        const cost = Math.max(5, Math.round(rating(p) / 7));
+        return `
+          <div class="card">
+            <div class="card-head"><strong>${p.name}</strong><span class="tag gold">${p.years} yr</span></div>
+            <p class="small">${p.role}, ${rating(p)} OVR, current salary $${p.salary}M.</p>
+            <button onclick="renew('${p.id}', 1, ${cost})">Add 1 year: $${cost}M</button>
+            <button onclick="renew('${p.id}', 3, ${cost * 2})">Add 3 years: $${cost * 2}M</button>
+          </div>
+        `;
+      }).join('') + `<div class="card"><strong>Advance Offseason</strong><p class="small">Move through contracts, market, draft, and into the next regular season.</p><button onclick="advancePhase()">Advance Phase</button></div>`);
+    }
+
+    function renew(playerId, years, cost) {
+      if (state.money < cost) return toast('Not enough money.');
+      const player = [state.team.field, state.team.keeper].find(p => p.id === playerId);
+      if (!player) return;
+      state.money -= cost;
+      player.years += years;
+      player.salary = Math.max(player.salary, Math.round(cost / years));
+      log(`${player.name} signs for ${years} more year${years > 1 ? 's' : ''}.`);
+      render();
+      openContracts();
+    }
+
+    function openMarket() {
+      const faCards = state.freeAgents.map((p, index) => {
+        const ask = Math.max(6, Math.round(rating(p) / 6) + rand(0, 4));
+        return `
+          <div class="card">
+            <div class="card-head"><strong>${p.name}</strong><span class="tag">${p.role}</span></div>
+            <p class="small">Age ${p.age}, ${rating(p)} OVR. Expected winning bid around $${ask}M.</p>
+            <button onclick="bidFreeAgent(${index}, ${ask})">Bid $${ask}M</button>
+          </div>
+        `;
+      }).join('');
+      const target = state.league.filter(t => !t.user).sort((a, b) => rating(b.field) - rating(a.field))[0];
+      const trade = target ? `
+        <div class="card">
+          <div class="card-head"><strong>Trade Offer</strong><span class="tag red">${target.name}</span></div>
+          <p class="small">${target.name} will send ${target.field.name} (${rating(target.field)} OVR Field) for your field player plus $8M.</p>
+          <button onclick="acceptTrade('${target.id}')">Accept Trade</button>
+        </div>
+      ` : '';
+      openModal('Bids & Trades', 'Compete for talent or make a direct swap. AI teams keep upgrading between seasons too.', faCards + trade + `<div class="card"><strong>Advance Offseason</strong><p class="small">Move toward the draft and next season.</p><button onclick="advancePhase()">Advance Phase</button></div>`);
+    }
+
+    function bidFreeAgent(index, ask) {
+      const p = state.freeAgents[index];
+      if (!p) return;
+      const rivalBid = ask + rand(-2, 5);
+      const finalCost = Math.max(ask, rivalBid + 1);
+      if (state.money < finalCost) return toast(`Rival bid pushed the price to $${finalCost}M.`);
+      const slot = p.role === 'Field' ? 'field' : 'keeper';
+      const old = state.team[slot];
+      state.money -= finalCost;
+      p.salary = Math.max(p.salary, Math.round(finalCost / 2));
+      p.years = 2;
+      state.team[slot] = p;
+      state.freeAgents.splice(index, 1);
+      state.freeAgents.push(old);
+      log(`Crown City wins the bid for ${p.name} at $${finalCost}M. ${old.name} is released to the market.`);
+      render();
+      openMarket();
+    }
+
+    function acceptTrade(teamId) {
+      const target = state.league.find(t => t.id === teamId);
+      if (!target) return;
+      if (state.money < 8) return toast('Need $8M to complete this trade.');
+      const old = state.team.field;
+      state.team.field = target.field;
+      target.field = old;
+      state.money -= 8;
+      log(`Trade complete with ${target.name}. ${state.team.field.name} becomes the new Crown City field star.`);
+      render();
+      openMarket();
+    }
+
+    function openDraft() {
+      const cards = state.draft.map((p, index) => `
+        <div class="card">
+          <div class="card-head"><strong>${p.name}</strong><span class="tag green">${p.role}</span></div>
+          <p class="small">Age ${p.age}, ${rating(p)} OVR, projected ceiling ${p.ceiling}. Drafting replaces your current ${p.role.toLowerCase()}.</p>
+          <button onclick="draftPlayer(${index})">Draft Prospect</button>
+        </div>
+      `).join('');
+      openModal('Draft Board', 'The annual draft is the cheapest way to reload after aging and retirements.', cards + `<div class="card"><strong>Advance Offseason</strong><p class="small">Start the next regular season after drafting or passing.</p><button onclick="advancePhase()">Advance Phase</button></div>`);
+    }
+
+    function openCustomize() {
+      openModal('Customize Club', 'Change the identity that appears on your roster, scoreboard, badge, and uniforms.', `
+        <div class="card">
+          <div class="card-head"><strong>Club Identity</strong><span class="tag gold">${state.brand.badge}</span></div>
+          <label class="small">Team name</label>
+          <input id="clubNameInput" type="text" maxlength="22" value="${state.brand.name}">
+          <label class="small">Badge letters</label>
+          <input id="badgeInput" type="text" maxlength="3" value="${state.brand.badge}">
+          <button onclick="saveClubIdentity()">Save Name & Badge</button>
+        </div>
+        <div class="card">
+          <div class="card-head"><strong>Uniform Colors</strong><span class="tag">Kit</span></div>
+          <div class="custom-row">
+            <label class="small">Primary<input id="primaryInput" type="color" value="${state.brand.primary}"></label>
+            <label class="small">Secondary<input id="secondaryInput" type="color" value="${state.brand.secondary}"></label>
+            <label class="small">Keeper<input id="keeperInput" type="color" value="${state.brand.keeper}"></label>
+          </div>
+          <button onclick="saveClubColors()">Save Colors</button>
+        </div>
+        <div class="card">
+          <div class="card-head"><strong>Quick Kits</strong><span class="tag green">Presets</span></div>
+          <div class="swatch-row">
+            <button onclick="applyKit('#5ab7df', '#f2bc4f', '#65c48d')">Sky / Gold</button>
+            <button onclick="applyKit('#e25e57', '#f5f0e7', '#5ab7df')">Red / White</button>
+            <button onclick="applyKit('#9a7bdc', '#65c48d', '#f2bc4f')">Violet / Green</button>
+          </div>
+          <p class="small">Uniforms are redrawn immediately in the match view.</p>
+        </div>
+      `);
+    }
+
+    function cleanBadge(value) {
+      return (value || state.brand.name || 'FC').replace(/[^a-z0-9]/gi, '').slice(0, 3).toUpperCase() || 'FC';
+    }
+
+    function cleanClubName(value) {
+      return (value || 'Crown City').replace(/[<>"']/g, '').trim().slice(0, 22) || 'Crown City';
+    }
+
+    function saveClubIdentity() {
+      const name = cleanClubName(document.getElementById('clubNameInput').value);
+      state.brand.name = name;
+      state.brand.badge = cleanBadge(document.getElementById('badgeInput').value);
+      state.team.name = name;
+      log(`Club identity updated: ${state.brand.name}.`);
+      render();
+      drawIdlePitch();
+      openCustomize();
+    }
+
+    function saveClubColors() {
+      state.brand.primary = document.getElementById('primaryInput').value;
+      state.brand.secondary = document.getElementById('secondaryInput').value;
+      state.brand.keeper = document.getElementById('keeperInput').value;
+      log('Uniform colors updated.');
+      render();
+      drawIdlePitch();
+      openCustomize();
+    }
+
+    function applyKit(primary, secondary, keeper) {
+      state.brand.primary = primary;
+      state.brand.secondary = secondary;
+      state.brand.keeper = keeper;
+      log('New kit preset applied.');
+      render();
+      drawIdlePitch();
+      openCustomize();
+    }
+
+    function draftPlayer(index) {
+      if (state.team.picks <= 0) return toast('No draft pick available.');
+      const p = state.draft[index];
+      if (!p) return;
+      const slot = p.role === 'Field' ? 'field' : 'keeper';
+      const old = state.team[slot];
+      state.freeAgents.push(old);
+      p.salary = 3;
+      p.years = 4;
+      state.team[slot] = p;
+      state.draft.splice(index, 1);
+      state.team.picks = 0;
+      log(`Drafted ${p.name}. ${old.name} becomes a free agent.`);
+      render();
+      openDraft();
+    }
+
+    function advancePhase() {
+      if (state.phase === 'Contracts') state.phase = 'Market';
+      else if (state.phase === 'Market') state.phase = 'Draft';
+      else if (state.phase === 'Draft') beginNextSeason();
+      closeModal();
+      render();
+    }
+
+    function beginNextSeason() {
+      state.season++;
+      state.phase = 'Regular Season';
+      state.week = 1;
+      state.team.picks = 1;
+      state.league.forEach(team => {
+        team.wins = 0; team.losses = 0; team.gf = 0; team.ga = 0;
+      });
+      aiOffseason();
+      log(`Season ${state.season} begins. The dynasty clock keeps moving.`);
+    }
+
+    function aiOffseason() {
+      state.league.filter(t => !t.user).forEach(team => {
+        if (Math.random() < .5) {
+          const slot = Math.random() < .5 ? 'field' : 'keeper';
+          team[slot] = makePlayer(slot === 'field' ? 'Field' : 'Keeper', rand(54, 78), rand(19, 30));
+        }
+        team.money += rand(3, 10);
+      });
+    }
+
+    function openModal(title, text, body) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalText').textContent = text;
+      document.getElementById('modalBody').innerHTML = body;
+      document.getElementById('modal').classList.add('open');
+      document.getElementById('modal').setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      document.getElementById('modal').setAttribute('aria-hidden', 'true');
+    }
+
+    function drawPitch() {
+      ctx.clearRect(0, 0, W, H);
+      const sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, '#29414d');
+      sky.addColorStop(.22, '#1d2b32');
+      sky.addColorStop(.23, '#2f8d58');
+      sky.addColorStop(1, '#1f6a43');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(0,0,0,.22)';
+      ctx.fillRect(0, 0, W, H * .23);
+      ctx.fillStyle = 'rgba(245,240,231,.08)';
+      for (let s = 0; s < 12; s++) {
+        ctx.fillRect(s * 92 - 12, 36 + Math.sin(s) * 8, 46, 34);
+      }
+      for (let i = 0; i < 10; i++) {
+        ctx.fillStyle = i % 2 ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.035)';
+        ctx.fillRect(i * W / 10, 0, W / 10, H);
+      }
+      ctx.fillStyle = 'rgba(15,18,24,.2)';
+      ctx.fillRect(18, 18, FIELD_MIN_X - 18, H - 36);
+      ctx.fillRect(FIELD_MAX_X, 18, W - FIELD_MAX_X - 18, H - 36);
+      ctx.fillStyle = 'rgba(242,188,79,.15)';
+      ctx.fillRect(FIELD_MIN_X - 4, 18, 8, H - 36);
+      ctx.fillRect(FIELD_MAX_X - 4, 18, 8, H - 36);
+      ctx.strokeStyle = 'rgba(255,255,255,.72)';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(18, 18, W - 36, H - 36);
+      ctx.beginPath(); ctx.moveTo(W / 2, 18); ctx.lineTo(W / 2, H - 18); ctx.stroke();
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, 70, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeRect(18, H / 2 - 92, 110, 184);
+      ctx.strokeRect(W - 128, H / 2 - 92, 110, 184);
+      ctx.fillStyle = 'rgba(255,255,255,.82)';
+      ctx.fillRect(4, H / 2 - 55, 18, 110);
+      ctx.fillRect(W - 22, H / 2 - 55, 18, 110);
+      ctx.fillStyle = 'rgba(242,188,79,.18)';
+      ctx.fillRect(W * .67, 18, W * .31, H - 36);
+      ctx.fillStyle = 'rgba(226,94,87,.14)';
+      ctx.fillRect(18, 18, W * .31, H - 36);
+      ctx.fillStyle = 'rgba(15,18,24,.22)';
+      ctx.beginPath();
+      ctx.ellipse(W / 2, H - 18, W * .5, 28, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawIdlePitch() {
+      drawPitch();
+      drawPlayer(W * .33, H * .5, state.brand.primary, state.brand.badge, state.brand.secondary);
+      drawPlayer(52, H * .5, state.brand.keeper, 'GK', state.brand.secondary);
+      drawPlayer(W * .66, H * .5, '#e25e57', 'AI', '#f5f0e7');
+      drawPlayer(W - 52, H * .5, '#f2bc4f', 'GK', '#e25e57');
+      drawBall(W * .5, H * .5);
+      document.getElementById('homeScore').textContent = `${state.team.name} 0`;
+      document.getElementById('awayScore').textContent = `Opponent 0`;
+      document.getElementById('timer').textContent = '90';
+      document.getElementById('matchNotice').textContent = state.phase;
+    }
+
+    function drawPlayer(x, y, color, text, trim = '#f5f0e7') {
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 22, 23, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = trim;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x - 8, y + 16);
+      ctx.lineTo(x - 15, y + 31);
+      ctx.moveTo(x + 8, y + 16);
+      ctx.lineTo(x + 15, y + 31);
+      ctx.moveTo(x - 13, y + 4);
+      ctx.lineTo(x - 27, y + 12);
+      ctx.moveTo(x + 13, y + 4);
+      ctx.lineTo(x + 27, y + 12);
+      ctx.stroke();
+      const body = ctx.createLinearGradient(x - 17, y - 10, x + 18, y + 24);
+      body.addColorStop(0, '#ffffff');
+      body.addColorStop(.08, color);
+      body.addColorStop(1, '#16202a');
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.roundRect(x - 15, y - 6, 30, 32, 9);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.28)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y - 19, 11, 0, Math.PI * 2);
+      ctx.fillStyle = '#c98f62';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.32)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = trim;
+      ctx.beginPath();
+      ctx.arc(x - 4, y - 21, 1.5, 0, Math.PI * 2);
+      ctx.arc(x + 4, y - 21, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f5f0e7';
+      ctx.font = '900 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y + 10);
+    }
+
+    function drawBall(x, y) {
+      ctx.fillStyle = 'rgba(0,0,0,.25)';
+      ctx.beginPath();
+      ctx.ellipse(x + 4, y + 10, 10, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#f5f0e7';
+      ctx.fill();
+      ctx.strokeStyle = '#0f1218';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function loop(time) {
+      const dt = Math.min(.033, (time - state.lastTime) / 1000 || .016);
+      state.lastTime = time;
+      if (state.match?.active) updateMatch(dt);
+      requestAnimationFrame(loop);
+    }
+
+    function updateMatch(dt) {
+      const m = state.match;
+      m.time -= dt;
+      m.cooldown = Math.max(0, m.cooldown - dt);
+      m.aiCooldown = Math.max(0, m.aiCooldown - dt);
+      if (m.time <= 0) {
+        finishMatch();
+        return;
+      }
+      moveUser(dt);
+      moveAi(dt);
+      updateGoalkeepers(dt);
+      updateBall(dt);
+      drawMatch();
+      document.getElementById('homeScore').textContent = `${state.team.name} ${m.home}`;
+      document.getElementById('awayScore').textContent = `${m.opponent.name} ${m.away}`;
+      document.getElementById('timer').textContent = Math.ceil(m.time);
+      document.getElementById('matchNotice').textContent = m.message;
+      syncDebugState();
+    }
+
+    function syncDebugState() {
+      const m = state.match;
+      if (!m) {
+        document.body.dataset.matchActive = 'false';
+        return;
+      }
+      document.body.dataset.matchActive = String(!!m.active);
+      document.body.dataset.ballOwner = m.ball.owner || 'loose';
+      document.body.dataset.ballVx = String(Math.round(m.ball.vx));
+      document.body.dataset.userX = String(Math.round(m.user.x));
+      document.body.dataset.aiX = String(Math.round(m.ai.x));
+      document.body.dataset.fieldMinX = String(Math.round(FIELD_MIN_X));
+      document.body.dataset.fieldMaxX = String(Math.round(FIELD_MAX_X));
+    }
+
+    function moveUser(dt) {
+      const m = state.match;
+      const p = m.user;
+      const speed = 150 + state.team.field.speed * 1.22;
+      let dx = 0, dy = 0;
+      if (keys.ArrowLeft || keys.a) dx -= 1;
+      if (keys.ArrowRight || keys.d) dx += 1;
+      if (keys.ArrowUp || keys.w) dy -= 1;
+      if (keys.ArrowDown || keys.s) dy += 1;
+      const mag = Math.hypot(dx, dy) || 1;
+      p.x = clamp(p.x + dx / mag * speed * dt, FIELD_MIN_X + 20, FIELD_MAX_X - 20);
+      p.y = clamp(p.y + dy / mag * speed * dt, 32, H - 32);
+      if (dist(p, m.ball) < 24 && m.ball.owner !== 'ai' && m.ball.release <= 0) {
+        m.ball.owner = 'user';
+        m.message = 'On the ball';
+      }
+    }
+
+    function moveAi(dt) {
+      const m = state.match;
+      const ai = m.ai;
+      const target = m.ball.owner === 'user' ? m.user : m.ball;
+      const speed = 82 + m.opponent.field.speed * .72;
+      if (m.ball.owner === 'ai') {
+        moveToward(ai, { x: FIELD_MIN_X + 34, y: H / 2 + Math.sin(Date.now() / 360) * 82 }, speed * dt);
+        ai.x = clamp(ai.x, FIELD_MIN_X + 20, FIELD_MAX_X - 20);
+        if (ai.x < FIELD_MIN_X + 105 && m.aiCooldown <= 0 && Math.random() < .025) aiShoot();
+      } else {
+        moveToward(ai, target, speed * dt);
+        ai.x = clamp(ai.x, FIELD_MIN_X + 20, FIELD_MAX_X - 20);
+        if (dist(ai, m.ball) < 23 && m.ball.release <= 0) {
+          const stealChance = (m.opponent.field.defense * .72 + rand(0, 24)) > (state.team.field.dribble + rand(0, 42));
+          if (stealChance) {
+            m.ball.owner = 'ai';
+            m.message = 'Turnover';
+          }
+        }
+      }
+    }
+
+    function updateGoalkeepers(dt) {
+      const m = state.match;
+      const gkSpeed = 110 + state.team.keeper.keeper;
+      const aiGkSpeed = 80 + m.opponent.keeper.keeper * .7;
+      moveToward(m.userGk, { x: 52, y: clamp(m.ball.y, H / 2 - 62, H / 2 + 62) }, gkSpeed * dt);
+      moveToward(m.aiGk, { x: W - 52, y: clamp(m.ball.y, H / 2 - 62, H / 2 + 62) }, aiGkSpeed * dt);
+    }
+
+    function updateBall(dt) {
+      const m = state.match;
+      const b = m.ball;
+      b.release = Math.max(0, (b.release || 0) - dt);
+      if (b.owner === 'user') {
+        b.x = m.user.x + 19;
+        b.y = m.user.y;
+      } else if (b.owner === 'ai') {
+        b.x = m.ai.x - 19;
+        b.y = m.ai.y;
+      } else {
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.vx *= .986;
+        b.vy *= .986;
+        if (b.y < 28 || b.y > H - 28) b.vy *= -1;
+        b.y = clamp(b.y, 28, H - 28);
+        if (dist(b, m.aiGk) < 27 && b.vx > 0) keeperSave('ai');
+        if (dist(b, m.userGk) < 27 && b.vx < 0) keeperSave('user');
+        if (b.x > W - 12 && b.y > H / 2 - 55 && b.y < H / 2 + 55) scoreGoal('user');
+        else if (b.x < 12 && b.y > H / 2 - 55 && b.y < H / 2 + 55) scoreGoal('ai');
+        else if (b.x < 0 || b.x > W) resetBall();
+      }
+    }
+
+    function keeperSave(side) {
+      const m = state.match;
+      if (side === 'ai') {
+        const saveRoll = m.opponent.keeper.keeper * .74 + rand(0, 28);
+        const shotRoll = state.team.field.shot + rand(8, 45);
+        if (saveRoll >= shotRoll) {
+          m.opponent.keeper.saves++;
+          m.ball.vx = -Math.abs(m.ball.vx) * .65;
+          m.ball.vy += rand(-90, 90);
+          m.message = 'Keeper save';
+        }
+      } else {
+        const saveRoll = state.team.keeper.keeper + rand(0, 45);
+        const shotRoll = m.opponent.field.shot * .78 + rand(0, 24);
+        if (saveRoll >= shotRoll) {
+          state.team.keeper.saves++;
+          m.ball.vx = Math.abs(m.ball.vx) * .65;
+          m.ball.vy += rand(-90, 90);
+          m.message = 'Your keeper saves';
+        }
+      }
+    }
+
+    function scoreGoal(side) {
+      const m = state.match;
+      if (side === 'user') {
+        m.home++;
+        state.team.field.goals++;
+        m.message = 'Goal Crown City';
+      } else {
+        m.away++;
+        m.opponent.field.goals++;
+        m.message = 'Goal opponent';
+      }
+      resetBall(side === 'user' ? 'ai' : 'user');
+    }
+
+    function resetBall(owner = null) {
+      const m = state.match;
+      m.user.x = W * .33; m.user.y = H * .5;
+      m.ai.x = W * .66; m.ai.y = H * .5;
+      m.ball.x = W * .5; m.ball.y = H * .5;
+      m.ball.vx = 0; m.ball.vy = 0;
+      m.ball.release = 0;
+      m.ball.owner = owner || (Math.random() < .5 ? 'user' : 'ai');
+    }
+
+    function shootOrTackle() {
+      const m = state.match;
+      if (!m?.active || m.cooldown > 0) return;
+      if (m.ball.owner === 'user') {
+        const central = 1 - Math.abs(m.user.y - H / 2) / (H / 2);
+        const zoneBonus = m.user.x > FIELD_MAX_X - 90 ? 1.3 : m.user.x > W * .5 ? 1.12 : .94;
+        const power = (430 + state.team.field.shot * 5.2) * zoneBonus;
+        const aimY = H / 2 + (m.user.y - H / 2) * .16 + rand(-30, 30) * (1 - central * .5);
+        const dx = W + 30 - m.user.x;
+        const dy = aimY - m.user.y;
+        const mag = Math.hypot(dx, dy) || 1;
+        m.ball.owner = null;
+        m.ball.release = .42;
+        m.ball.vx = dx / mag * power;
+        m.ball.vy = dy / mag * power;
+        m.cooldown = .55;
+        m.message = 'Shot';
+      } else if (dist(m.user, m.ball) < 42 || dist(m.user, m.ai) < 42) {
+        const tackle = state.team.field.defense + rand(8, 48);
+        const control = m.opponent.field.dribble * .72 + rand(0, 26);
+        if (tackle >= control) {
+          m.ball.owner = 'user';
+          m.message = 'Clean tackle';
+        } else {
+          m.message = 'Missed tackle';
+        }
+        m.cooldown = .55;
+      }
+    }
+
+    function aiShoot() {
+      const m = state.match;
+      const power = 260 + m.opponent.field.shot * 2.8;
+      const aimY = H / 2 + rand(-95, 95);
+      const dx = 0 - m.ai.x;
+      const dy = aimY - m.ai.y;
+      const mag = Math.hypot(dx, dy) || 1;
+      m.ball.owner = null;
+      m.ball.release = .42;
+      m.ball.vx = dx / mag * power;
+      m.ball.vy = dy / mag * power;
+      m.aiCooldown = .8;
+      m.message = 'Opponent shot';
+    }
+
+    function drawMatch() {
+      const m = state.match;
+      drawPitch();
+      drawPlayer(m.user.x, m.user.y, state.brand.primary, state.brand.badge, state.brand.secondary);
+      drawPlayer(m.userGk.x, m.userGk.y, state.brand.keeper, 'GK', state.brand.secondary);
+      drawPlayer(m.ai.x, m.ai.y, '#e25e57', 'AI', '#f5f0e7');
+      drawPlayer(m.aiGk.x, m.aiGk.y, '#f2bc4f', 'GK', '#e25e57');
+      drawBall(m.ball.x, m.ball.y);
+    }
+
+    function moveToward(actor, target, amount) {
+      const dx = target.x - actor.x;
+      const dy = target.y - actor.y;
+      const mag = Math.hypot(dx, dy) || 1;
+      actor.x += dx / mag * Math.min(amount, mag);
+      actor.y += dy / mag * Math.min(amount, mag);
+    }
+
+    function dist(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    window.addEventListener('keydown', event => {
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      keys[key] = true;
+      if (event.code === 'Space' || key === ' ') {
+        event.preventDefault();
+        shootOrTackle();
+      }
+    });
+
+    window.addEventListener('keyup', event => {
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      keys[key] = false;
+    });
+
+    document.getElementById('startMatchBtn').addEventListener('click', startMatch);
+    document.getElementById('shootBtn').addEventListener('click', shootOrTackle);
+    document.getElementById('trainBtn').addEventListener('click', openTraining);
+    document.getElementById('contractBtn').addEventListener('click', openContracts);
+    document.getElementById('marketBtn').addEventListener('click', openMarket);
+    document.getElementById('draftBtn').addEventListener('click', openDraft);
+    document.getElementById('customizeBtn').addEventListener('click', openCustomize);
+    document.getElementById('resetBtn').addEventListener('click', init);
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('modal').addEventListener('click', event => {
+      if (event.target.id === 'modal') closeModal();
+    });
+
+    window.train = train;
+    window.renew = renew;
+    window.bidFreeAgent = bidFreeAgent;
+    window.acceptTrade = acceptTrade;
+    window.draftPlayer = draftPlayer;
+    window.advancePhase = advancePhase;
+    window.saveClubIdentity = saveClubIdentity;
+    window.saveClubColors = saveClubColors;
+    window.applyKit = applyKit;
+
+    init();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
