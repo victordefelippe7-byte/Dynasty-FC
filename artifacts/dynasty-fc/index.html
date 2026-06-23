@@ -1512,10 +1512,12 @@ function updateBall(dt){
       }
     }
 
-    // Goals
-    if(b.x>FX2+2&&b.y>GOAL_Y1&&b.y<GOAL_Y2) scoreGoal('user');
-    else if(b.x<FX-2&&b.y>GOAL_Y1&&b.y<GOAL_Y2) scoreGoal('ai');
-    else if(b.x<FX-30||b.x>FX2+30) resetBall();
+    // Goals — guarded by scored flag to prevent multi-count across frames
+    if(!b.scored){
+      if(b.x>FX2+2&&b.y>GOAL_Y1&&b.y<GOAL_Y2){ b.scored=true; scoreGoal('user'); }
+      else if(b.x<FX-2&&b.y>GOAL_Y1&&b.y<GOAL_Y2){ b.scored=true; scoreGoal('ai'); }
+      else if(b.x<FX-30||b.x>FX2+30) resetBall();
+    }
   }
 }
 
