@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Item Dominion - Playable Prototype</title>
+  <style>
+    :root {
+      --bg: #16181f;
+      --panel: #242936;
+      --panel-2: #2f3545;
+      --ink: #f4f0e8;
+      --muted: #b7bdc9;
+      --line: #4a5060;
+      --gold: #f0b84b;
+      --red: #df5d53;
+      --green: #61c48a;
+      --cyan: #5bbbd6;
+      --violet: #9a7bdc;
+      --black: #101219;
+      --shadow: 0 16px 40px rgba(0, 0, 0, .28);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(91,187,214,.18), transparent 28%),
+        linear-gradient(135deg, #191b23 0%, #222a2d 48%, #181920 100%);
+    }
+
+    button, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid transparent;
+      border-radius: 7px;
+      padding: 9px 12px;
+      color: var(--black);
+      background: var(--gold);
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform .12s ease, filter .12s ease, background .12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .ghost {
+      color: var(--ink);
+      background: transparent;
+      border-color: var(--line);
+    }
+
+    .danger {
+      color: #fff;
+      background: var(--red);
+    }
+
+    .shell {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 310px 1fr 360px;
+      gap: 14px;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 6px 2px 10px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 52px);
+      letter-spacing: 0;
+      line-height: .98;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      max-width: 680px;
+      margin-top: 8px;
+      line-height: 1.45;
+    }
+
+    .top-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(72px, 1fr));
+      gap: 8px;
+      min-width: 360px;
+    }
+
+    .stat, .panel, .item-card, .area, .bot-card, .modal-box {
+      background: rgba(36, 41, 54, .92);
+      border: 1px solid rgba(255,255,255,.09);
+      box-shadow: var(--shadow);
+    }
+
+    .stat {
+      min-height: 64px;
+      border-radius: 8px;
+      padding: 9px 10px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 800;
+    }
+
+    .value {
+      font-size: 25px;
+      font-weight: 900;
+      margin-top: 3px;
+    }
+
+    .panel {
+      border-radius: 8px;
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .left, .center, .right {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .areas {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .area {
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      min-height: 154px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(47,53,69,.95), rgba(35,39,51,.95));
+    }
+
+    .area.active {
+      outline: 3px solid var(--gold);
+    }
+
+    .area svg {
+      position: absolute;
+      right: 8px;
+      bottom: 5px;
+      width: 86px;
+      height: 86px;
+      opacity: .68;
+    }
+
+    .area h3 {
+      position: relative;
+      font-size: 19px;
+      margin-bottom: 5px;
+    }
+
+    .area p {
+      position: relative;
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 13px;
+      max-width: 75%;
+    }
+
+    .area-actions {
+      position: relative;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .inventory {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+      gap: 10px;
+    }
+
+    .item-card {
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      gap: 7px;
+      min-height: 172px;
+    }
+
+    .item-card.selected {
+      outline: 3px solid var(--gold);
+    }
+
+    .item-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .item-icon {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: #151923;
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    .item-name {
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.12;
+    }
+
+    .rarity {
+      width: fit-content;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: var(--black);
+      font-weight: 900;
+      background: var(--cyan);
+    }
+
+    .rarity.rare { background: var(--violet); color: #fff; }
+    .rarity.epic { background: var(--gold); }
+    .rarity.cursed { background: var(--red); color: #fff; }
+
+    .bars {
+      display: grid;
+      gap: 5px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 42px 1fr 20px;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .bar {
+      height: 7px;
+      border-radius: 999px;
+      background: #12151c;
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      background: var(--green);
+    }
+
+    .bar.attack span { background: var(--red); }
+    .bar.block span { background: var(--cyan); }
+    .bar.speed span { background: var(--gold); }
+
+    .trait {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .bot-card {
+      border-radius: 8px;
+      padding: 11px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 9px;
+    }
+
+    .bot-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .log {
+      height: 250px;
+      overflow: auto;
+      padding-right: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-entry {
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: 13px;
+      padding: 8px;
+      border-left: 3px solid var(--line);
+      background: rgba(0,0,0,.15);
+      border-radius: 0 7px 7px 0;
+    }
+
+    .duel-stage {
+      min-height: 282px;
+      display: grid;
+      grid-template-columns: 1fr 120px 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .duel-slot {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(0,0,0,.12);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .versus {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .score-pips {
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .pip {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--line);
+      background: transparent;
+    }
+
+    .pip.on { background: var(--gold); border-color: var(--gold); }
+
+    .duel-actions {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .market-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+    }
+
+    .auction-row, .trade-row {
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(0,0,0,.17);
+      border: 1px solid rgba(255,255,255,.08);
+      display: grid;
+      gap: 8px;
+    }
+
+    .row-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.62);
+      padding: 18px;
+      z-index: 10;
+    }
+
+    .modal.open { display: flex; }
+
+    .modal-box {
+      width: min(860px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+
+    .duel-picker {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .rules {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      width: min(540px, calc(100% - 32px));
+      padding: 11px 14px;
+      border-radius: 8px;
+      color: var(--black);
+      background: var(--gold);
+      box-shadow: var(--shadow);
+      font-weight: 900;
+      display: none;
+      z-index: 20;
+    }
+
+    .toast.show { display: block; }
+
+    @media (max-width: 1180px) {
+      .shell { grid-template-columns: 1fr 1fr; }
+      .center { grid-column: 1 / -1; order: 3; }
+      .right { order: 2; }
+      .left { order: 1; }
+      header { align-items: stretch; flex-direction: column; }
+      .top-stats { min-width: 0; }
+    }
+
+    @media (max-width: 760px) {
+      .shell { grid-template-columns: 1fr; padding: 12px; }
+      .left, .center, .right { order: initial; grid-column: auto; }
+      .top-stats { grid-template-columns: 1fr 1fr; }
+      .areas, .duel-stage { grid-template-columns: 1fr; }
+      .versus { min-height: 60px; }
+      .area p { max-width: 100%; }
+      h1 { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Item Dominion</h1>
+        <p class="subtitle">Win best-of-three item duels, take defeated gear, move between districts, bargain with rivals, and spend prestige in auctions before another collector claims the set.</p>
+      </div>
+      <div class="top-stats">
+        <div class="stat"><div class="label">Prestige</div><div class="value" id="prestige">0</div></div>
+        <div class="stat"><div class="label">Tokens</div><div class="value" id="tokens">0</div></div>
+        <div class="stat"><div class="label">Items</div><div class="value" id="itemCount">0</div></div>
+        <div class="stat"><div class="label">Round</div><div class="value" id="round">1</div></div>
+      </div>
+    </header>
+
+    <aside class="left">
+      <section class="panel">
+        <h2>District Map</h2>
+        <div class="areas" id="areas"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Rival Collectors</h2>
+        <div id="bots"></div>
+      </section>
+    </aside>
+
+    <main class="center">
+      <section class="panel">
+        <h2>Duel Table</h2>
+        <div class="duel-stage">
+          <div class="duel-slot" id="playerSlot">
+            <div class="label">Your item</div>
+            <p class="small">Pick a rival and start a duel. Each round wagers one item.</p>
+          </div>
+          <div class="versus">
+            <div>
+              <div style="font-size:34px;color:var(--ink)">VS</div>
+              <div id="duelScore">No duel</div>
+              <div class="score-pips">
+                <span class="pip" id="p1"></span><span class="pip" id="p2"></span>
+                <span class="pip" id="b1"></span><span class="pip" id="b2"></span>
+              </div>
+            </div>
+          </div>
+          <div class="duel-slot" id="botSlot">
+            <div class="label">Rival item</div>
+            <p class="small">Rivals choose from their inventory. Winning the match steals the items you beat.</p>
+          </div>
+        </div>
+        <div class="duel-actions">
+          <button id="resolveBtn" disabled>Resolve Selected Round</button>
+          <button class="ghost" id="forageBtn">Search Current District</button>
+          <button class="ghost" id="endTurnBtn">End Turn</button>
+          <button class="danger" id="resetBtn">Restart Prototype</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Your Inventory</h2>
+        <div class="inventory" id="inventory"></div>
+      </section>
+    </main>
+
+    <aside class="right">
+      <section class="panel">
+        <h2>Auction House</h2>
+        <div class="market-grid" id="auction"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Trade Desk</h2>
+        <div class="market-grid" id="trades"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Event Log</h2>
+        <div class="log" id="log"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Prototype Rules</h2>
+        <div class="rules">
+          <p>Win two duel rounds to claim the rival items your winning items defeated. Lose two rounds and your wagered items are gone.</p>
+          <p>Attack overcomes block. Speed breaks ties. Traits add small tactical twists. Random district events can boost, tax, or disable actions for a turn.</p>
+          <p>Prestige buys auction items. Tokens pay for movement, searches, and some trades. Empty a rival inventory to eliminate that collector.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="modal" id="duelModal" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h2 id="duelTitle">Choose an Item</h2>
+          <p class="small" id="duelHint">Select the item you want to wager this round.</p>
+        </div>
+        <button class="ghost" id="closeModal">Close</button>
+      </div>
+      <div class="duel-picker" id="duelPicker"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const icons = {
+      blade: '<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#d9e2ef" d="M47 5 28 36l-7-7L52 10z"/><path fill="#f0b84b" d="m18 32 14 14-5 5-14-14z"/><path fill="#5bbbd6" d="m10 45 9 9-6 4-7-7z"/></svg>',
+      shield: '<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#5bbbd6" d="M32 5 53 14v16c0 14-8 24-21 29C19 54 11 44 11 30V14z"/><path fill="#f4f0e8" d="M32 12v39c9-5 14-12 14-22V18z" opacity=".55"/></svg>',
+      wand: '<svg viewBox="0 0 64 64" aria-hidden="true"><path stroke="#f4f0e8" stroke-width="7" stroke-linecap="round" d="M17 49 46 20"/><path fill="#f0b84b" d="m48 4 3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/></svg>',
+      boots: '<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#61c48a" d="M12 37h18l5 8h17v8H23c-7 0-11-5-11-11z"/><path fill="#9a7bdc" d="M20 13h16v22H14z"/></svg>',
+      relic: '<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#f0b84b" d="m32 4 22 16-8 26H18L10 20z"/><circle cx="32" cy="30" r="10" fill="#16181f"/><circle cx="32" cy="30" r="5" fill="#df5d53"/></svg>',
+      trap: '<svg viewBox="0 0 64 64" aria-hidden="true"><path fill="#df5d53" d="M9 47h46v8H9z"/><path fill="#d9e2ef" d="m17 47 6-24 7 24zm17 0 6-24 7 24z"/><path fill="#9a7bdc" d="M20 10h24v9H20z"/></svg>'
+    };
+
+    const areaArt = {
+      arena: '<svg viewBox="0 0 120 120"><path fill="#df5d53" d="M20 82h80v18H20z"/><path fill="#f0b84b" d="M31 30h58v52H31z"/><path fill="#16181f" d="M43 43h34v39H43z"/></svg>',
+      market: '<svg viewBox="0 0 120 120"><path fill="#5bbbd6" d="M18 47h84v45H18z"/><path fill="#f0b84b" d="m24 25 72 0 10 22H14z"/><path fill="#16181f" d="M34 61h16v31H34zm36 0h16v31H70z"/></svg>',
+      vault: '<svg viewBox="0 0 120 120"><path fill="#9a7bdc" d="M23 36h74v58H23z"/><circle cx="60" cy="65" r="21" fill="#16181f"/><circle cx="60" cy="65" r="9" fill="#f0b84b"/></svg>',
+      wilds: '<svg viewBox="0 0 120 120"><path fill="#61c48a" d="M17 94h86L74 27z"/><path fill="#5bbbd6" d="M34 94h61L56 44z"/><path fill="#f0b84b" d="M78 19h16v16H78z"/></svg>'
+    };
+
+    const itemPool = [
+      { name: 'Mirror Buckler', icon: 'shield', rarity: 'rare', attack: 2, block: 8, speed: 4, value: 7, trait: 'Reflects 2 power when it blocks more than 4 damage.' },
+      { name: 'Ember Pike', icon: 'blade', rarity: 'rare', attack: 8, block: 2, speed: 5, value: 8, trait: 'Gains +2 attack in the Arena.' },
+      { name: 'Auctioneer Bell', icon: 'relic', rarity: 'epic', attack: 5, block: 4, speed: 5, value: 11, trait: 'Winning with it gives +2 prestige.' },
+      { name: 'Lockjaw Trap', icon: 'trap', rarity: 'cursed', attack: 7, block: 5, speed: 1, value: 9, trait: 'On a win, rival loses 1 token.' },
+      { name: 'Fleet Boots', icon: 'boots', rarity: 'common', attack: 3, block: 3, speed: 9, value: 5, trait: 'Wins tied rounds by speed.' },
+      { name: 'Glass Wand', icon: 'wand', rarity: 'common', attack: 9, block: 1, speed: 6, value: 6, trait: 'Huge attack, fragile on bad rolls.' },
+      { name: 'Grudge Helm', icon: 'shield', rarity: 'common', attack: 4, block: 6, speed: 3, value: 5, trait: 'Gets +2 block after you lose a round.' },
+      { name: 'Storm Needle', icon: 'blade', rarity: 'epic', attack: 7, block: 3, speed: 8, value: 12, trait: 'Adds a second random swing from -1 to +2.' },
+      { name: 'Vault Key', icon: 'relic', rarity: 'rare', attack: 4, block: 7, speed: 4, value: 8, trait: 'Searches in the Vault cost 0 tokens.' },
+      { name: 'Bargain Mask', icon: 'wand', rarity: 'common', attack: 3, block: 5, speed: 7, value: 6, trait: 'Trades cost 2 fewer tokens.' },
+      { name: 'Iron Banner', icon: 'relic', rarity: 'rare', attack: 6, block: 6, speed: 2, value: 8, trait: 'No random penalty can drop it below 5 power.' },
+      { name: 'Snare Satchel', icon: 'trap', rarity: 'common', attack: 5, block: 4, speed: 6, value: 6, trait: 'On a loss, gain 1 token.' }
+    ];
+
+    const state = {
+      round: 1,
+      prestige: 6,
+      tokens: 8,
+      area: 'arena',
+      selectedBot: null,
+      selectedItemId: null,
+      duel: null,
+      disabledSearch: false,
+      player: { items: [] },
+      bots: [],
+      auctions: [],
+      trades: [],
+      log: []
+    };
+
+    const areas = [
+      { id: 'arena', name: 'Duel Arena', cost: 0, text: 'Challenge collectors. Arena attacks hit harder.' },
+      { id: 'market', name: 'Bazaar Row', cost: 1, text: 'Auctions refresh here. Trade prices are lower.' },
+      { id: 'vault', name: 'Old Vault', cost: 2, text: 'Searches can reveal rare gear or traps.' },
+      { id: 'wilds', name: 'Wild Claims', cost: 1, text: 'Random events are stronger and riskier.' }
+    ];
+
+    function cloneItem(base) {
+      return { ...base, id: Math.random().toString(36).slice(2, 10) };
+    }
+
+    function drawItem(rarityBias = 0) {
+      const weighted = itemPool.filter(item => {
+        if (rarityBias > 1) return item.rarity !== 'common' || Math.random() > .35;
+        if (rarityBias < 0) return item.rarity !== 'epic';
+        return true;
+      });
+      return cloneItem(weighted[Math.floor(Math.random() * weighted.length)]);
+    }
+
+    function init() {
+      state.round = 1;
+      state.prestige = 6;
+      state.tokens = 8;
+      state.area = 'arena';
+      state.selectedBot = null;
+      state.selectedItemId = null;
+      state.duel = null;
+      state.disabledSearch = false;
+      state.player.items = [
+        cloneItem(itemPool[1]), cloneItem(itemPool[0]), cloneItem(itemPool[4]), cloneItem(itemPool[10])
+      ];
+      state.bots = [
+        { id: 'mara', name: 'Mara the Appraiser', style: 'blocks first, bids high', prestige: 5, tokens: 6, eliminated: false, items: [drawItem(), drawItem(), drawItem(1)] },
+        { id: 'sable', name: 'Sable Jack', style: 'fast attacks, loves traps', prestige: 4, tokens: 8, eliminated: false, items: [drawItem(), drawItem(), drawItem()] },
+        { id: 'ordo', name: 'Ordo Nine', style: 'balanced set collector', prestige: 7, tokens: 4, eliminated: false, items: [drawItem(1), drawItem(), drawItem()] }
+      ];
+      state.auctions = [drawItem(), drawItem(1), drawItem()];
+      state.trades = [];
+      state.log = [];
+      log('You enter the Duel Arena with four starting items. Win duels to steal gear, then spend prestige at auction.');
+      refreshTrades();
+      render();
+    }
+
+    function log(message) {
+      state.log.unshift(message);
+      state.log = state.log.slice(0, 24);
+    }
+
+    function toast(message) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.add('show');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function itemPower(item, owner, opponent, context = {}) {
+      let attack = item.attack;
+      let block = item.block;
+      let speed = item.speed;
+      let notes = [];
+      if (state.area === 'arena' && item.name === 'Ember Pike') { attack += 2; notes.push('arena edge'); }
+      if (context.ownerLostLast && item.name === 'Grudge Helm') { block += 2; notes.push('grudge block'); }
+      let power = attack + Math.max(0, block - Math.floor((opponent?.attack || 0) / 2)) + Math.floor(speed / 3);
+      const swing = randomInt(-2, 3);
+      power += swing;
+      notes.push(swing >= 0 ? `+${swing} fortune` : `${swing} fortune`);
+      if (item.name === 'Storm Needle') {
+        const storm = randomInt(-1, 2);
+        power += storm;
+        notes.push(storm >= 0 ? `+${storm} storm` : `${storm} storm`);
+      }
+      if (item.name === 'Iron Banner') power = Math.max(power, 5);
+      return { power, speed, notes };
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function render() {
+      document.getElementById('prestige').textContent = state.prestige;
+      document.getElementById('tokens').textContent = state.tokens;
+      document.getElementById('itemCount').textContent = state.player.items.length;
+      document.getElementById('round').textContent = state.round;
+      renderAreas();
+      renderBots();
+      renderInventory();
+      renderAuction();
+      renderTrades();
+      renderLog();
+      renderDuel();
+    }
+
+    function renderAreas() {
+      document.getElementById('areas').innerHTML = areas.map(area => `
+        <div class="area ${state.area === area.id ? 'active' : ''}">
+          ${areaArt[area.id]}
+          <div>
+            <h3>${area.name}</h3>
+            <p>${area.text}</p>
+          </div>
+          <div class="area-actions">
+            <button ${state.area === area.id ? 'disabled' : ''} onclick="moveTo('${area.id}')">Move ${area.cost ? area.cost + ' token' : 'free'}</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderBots() {
+      document.getElementById('bots').innerHTML = state.bots.map(bot => `
+        <div class="bot-card">
+          <div>
+            <strong>${bot.name}</strong>
+            <div class="bot-meta">${bot.eliminated ? 'Eliminated' : `${bot.items.length} items | ${bot.prestige} prestige | ${bot.tokens} tokens`}</div>
+            <div class="bot-meta">${bot.style}</div>
+          </div>
+          <button ${bot.eliminated || state.duel ? 'disabled' : ''} onclick="startDuel('${bot.id}')">Duel</button>
+        </div>
+      `).join('');
+    }
+
+    function card(item, options = {}) {
+      const selected = options.selected ? 'selected' : '';
+      const action = options.action ? `onclick="${options.action}"` : '';
+      return `
+        <div class="item-card ${selected}" ${action}>
+          <div class="item-top">
+            <div class="item-icon">${icons[item.icon]}</div>
+            <div>
+              <div class="item-name">${item.name}</div>
+              <div class="rarity ${item.rarity}">${item.rarity}</div>
+            </div>
+          </div>
+          <div class="bars">
+            <div class="bar-row"><span>ATK</span><div class="bar attack"><span style="width:${item.attack * 10}%"></span></div><span>${item.attack}</span></div>
+            <div class="bar-row"><span>BLK</span><div class="bar block"><span style="width:${item.block * 10}%"></span></div><span>${item.block}</span></div>
+            <div class="bar-row"><span>SPD</span><div class="bar speed"><span style="width:${item.speed * 10}%"></span></div><span>${item.speed}</span></div>
+          </div>
+          <p class="trait">${item.trait}</p>
+          <div class="small">Value ${item.value}</div>
+        </div>
+      `;
+    }
+
+    function renderInventory() {
+      const inv = document.getElementById('inventory');
+      if (!state.player.items.length) {
+        inv.innerHTML = '<p class="small">No items left. Restart and try a different opening strategy.</p>';
+        return;
+      }
+      inv.innerHTML = state.player.items.map(item => card(item, { selected: item.id === state.selectedItemId })).join('');
+    }
+
+    function renderAuction() {
+      document.getElementById('auction').innerHTML = state.auctions.map((item, index) => {
+        const bid = Math.max(2, item.value - 2 + randomInt(0, 2));
+        return `
+          <div class="auction-row">
+            <div class="row-head">
+              <div><strong>${item.name}</strong><div class="small">${item.rarity} | market bid ${bid} prestige</div></div>
+              <button onclick="bid(${index}, ${bid})">Bid</button>
+            </div>
+            <p class="small">${item.trait}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTrades() {
+      document.getElementById('trades').innerHTML = state.trades.map((trade, index) => `
+        <div class="trade-row">
+          <div class="row-head">
+            <div><strong>${trade.botName}</strong><div class="small">Wants ${trade.wants.name}; offers ${trade.offers.name}</div></div>
+            <button onclick="acceptTrade(${index})">Trade</button>
+          </div>
+          <p class="small">Token fee: ${trade.fee}. ${trade.offers.trait}</p>
+        </div>
+      `).join('') || '<p class="small">No trades are posted. End the turn to refresh offers.</p>';
+    }
+
+    function renderLog() {
+      document.getElementById('log').innerHTML = state.log.map(entry => `<div class="log-entry">${entry}</div>`).join('');
+    }
+
+    function renderDuel() {
+      const resolveBtn = document.getElementById('resolveBtn');
+      if (!state.duel) {
+        document.getElementById('playerSlot').innerHTML = '<div class="label">Your item</div><p class="small">Pick a rival and start a duel. Each round wagers one item.</p>';
+        document.getElementById('botSlot').innerHTML = '<div class="label">Rival item</div><p class="small">Rivals choose from their inventory. Winning the match steals the items you beat.</p>';
+        document.getElementById('duelScore').textContent = 'No duel';
+        resolveBtn.disabled = true;
+        setPips(0, 0);
+        return;
+      }
+      const duel = state.duel;
+      const playerItem = state.player.items.find(i => i.id === duel.pendingPlayerItemId);
+      const botItem = duel.pendingBotItem;
+      document.getElementById('duelScore').textContent = `${duel.playerWins} - ${duel.botWins}`;
+      setPips(duel.playerWins, duel.botWins);
+      document.getElementById('playerSlot').innerHTML = playerItem ? card(playerItem) : '<div class="label">Your item</div><p class="small">Choose your wager for this round.</p>';
+      document.getElementById('botSlot').innerHTML = botItem ? card(botItem) : '<div class="label">Rival item</div><p class="small">Hidden until you choose.</p>';
+      resolveBtn.disabled = !playerItem || !botItem;
+    }
+
+    function setPips(player, bot) {
+      document.getElementById('p1').classList.toggle('on', player > 0);
+      document.getElementById('p2').classList.toggle('on', player > 1);
+      document.getElementById('b1').classList.toggle('on', bot > 0);
+      document.getElementById('b2').classList.toggle('on', bot > 1);
+    }
+
+    function moveTo(areaId) {
+      const area = areas.find(a => a.id === areaId);
+      if (!area || state.area === areaId) return;
+      if (state.tokens < area.cost) return toast('Not enough tokens to move there.');
+      state.tokens -= area.cost;
+      state.area = areaId;
+      log(`You moved to ${area.name}.`);
+      if (areaId === 'market') refreshAuctions();
+      districtEvent();
+      render();
+    }
+
+    function startDuel(botId) {
+      const bot = state.bots.find(b => b.id === botId);
+      if (!bot || bot.eliminated) return;
+      if (state.player.items.length < 2) return toast('You need at least two items to risk a duel.');
+      if (bot.items.length < 2) return toast('That rival cannot field enough items.');
+      state.selectedBot = botId;
+      state.duel = { botId, playerWins: 0, botWins: 0, wonItems: [], lostItems: [], pendingPlayerItemId: null, pendingBotItem: null, playerLostLast: false, botLostLast: false };
+      log(`Duel started against ${bot.name}. First to two round wins takes the defeated items.`);
+      openDuelPicker();
+      render();
+    }
+
+    function openDuelPicker() {
+      if (!state.duel) return;
+      const bot = state.bots.find(b => b.id === state.duel.botId);
+      document.getElementById('duelTitle').textContent = `Round ${state.duel.playerWins + state.duel.botWins + 1}: wager an item`;
+      document.getElementById('duelHint').textContent = `${bot.name} will reveal a rival item after your pick.`;
+      document.getElementById('duelPicker').innerHTML = state.player.items.map(item => card(item, { action: `chooseDuelItem('${item.id}')` })).join('');
+      document.getElementById('duelModal').classList.add('open');
+      document.getElementById('duelModal').setAttribute('aria-hidden', 'false');
+    }
+
+    function closeDuelPicker() {
+      document.getElementById('duelModal').classList.remove('open');
+      document.getElementById('duelModal').setAttribute('aria-hidden', 'true');
+    }
+
+    function chooseDuelItem(itemId) {
+      const duel = state.duel;
+      const bot = state.bots.find(b => b.id === duel.botId);
+      duel.pendingPlayerItemId = itemId;
+      duel.pendingBotItem = botChooseItem(bot);
+      closeDuelPicker();
+      log(`${bot.name} reveals ${duel.pendingBotItem.name}. Resolve the clash when ready.`);
+      render();
+    }
+
+    function botChooseItem(bot) {
+      const sorted = [...bot.items].sort((a, b) => (b.attack + b.block + b.speed / 2) - (a.attack + a.block + a.speed / 2));
+      if (Math.random() < .7) return sorted[0];
+      return bot.items[Math.floor(Math.random() * bot.items.length)];
+    }
+
+    function resolveRound() {
+      const duel = state.duel;
+      if (!duel) return;
+      const bot = state.bots.find(b => b.id === duel.botId);
+      const playerItem = state.player.items.find(i => i.id === duel.pendingPlayerItemId);
+      const botItem = duel.pendingBotItem;
+      if (!playerItem || !botItem) return;
+      const playerScore = itemPower(playerItem, 'player', botItem, { ownerLostLast: duel.playerLostLast });
+      const botScore = itemPower(botItem, 'bot', playerItem, { ownerLostLast: duel.botLostLast });
+      let playerWins = playerScore.power > botScore.power || (playerScore.power === botScore.power && playerScore.speed >= botScore.speed);
+      const scoreLine = `${playerItem.name} ${playerScore.power} (${playerScore.notes.join(', ')}) vs ${botItem.name} ${botScore.power} (${botScore.notes.join(', ')})`;
+      if (playerWins) {
+        duel.playerWins++;
+        duel.wonItems.push(botItem);
+        bot.items = bot.items.filter(i => i.id !== botItem.id);
+        duel.playerLostLast = false;
+        duel.botLostLast = true;
+        if (playerItem.name === 'Auctioneer Bell') state.prestige += 2;
+        if (playerItem.name === 'Lockjaw Trap') bot.tokens = Math.max(0, bot.tokens - 1);
+        log(`Round won: ${scoreLine}. ${botItem.name} is held as claimed loot.`);
+      } else {
+        duel.botWins++;
+        duel.lostItems.push(playerItem);
+        state.player.items = state.player.items.filter(i => i.id !== playerItem.id);
+        duel.playerLostLast = true;
+        duel.botLostLast = false;
+        if (playerItem.name === 'Snare Satchel') state.tokens += 1;
+        log(`Round lost: ${scoreLine}. You lose ${playerItem.name}.`);
+      }
+      duel.pendingPlayerItemId = null;
+      duel.pendingBotItem = null;
+      if (duel.playerWins >= 2 || duel.botWins >= 2) finishDuel();
+      else openDuelPicker();
+      render();
+    }
+
+    function finishDuel() {
+      const duel = state.duel;
+      const bot = state.bots.find(b => b.id === duel.botId);
+      if (duel.playerWins >= 2) {
+        state.player.items.push(...duel.wonItems);
+        const prize = 3 + duel.wonItems.length;
+        state.prestige += prize;
+        log(`Match won against ${bot.name}. You keep ${duel.wonItems.map(i => i.name).join(', ')} and gain ${prize} prestige.`);
+      } else {
+        bot.items.push(...duel.lostItems);
+        bot.prestige += 3;
+        log(`Match lost. ${bot.name} adds ${duel.lostItems.map(i => i.name).join(', ')} to their collection.`);
+      }
+      if (bot.items.length === 0) {
+        bot.eliminated = true;
+        state.prestige += 6;
+        log(`${bot.name} is eliminated. You gain 6 prestige for clearing a rival collection.`);
+      }
+      state.duel = null;
+      state.selectedBot = null;
+      closeDuelPicker();
+      checkGameState();
+    }
+
+    function bid(index, cost) {
+      const item = state.auctions[index];
+      if (!item) return;
+      const rivalBid = randomInt(0, 4);
+      const finalCost = cost + (rivalBid > 2 ? 2 : 0);
+      if (state.prestige < finalCost) return toast(`Need ${finalCost} prestige to beat the table.`);
+      state.prestige -= finalCost;
+      state.player.items.push(item);
+      state.auctions.splice(index, 1, drawItem(1));
+      log(`Auction won: ${item.name} for ${finalCost} prestige.`);
+      render();
+    }
+
+    function refreshAuctions() {
+      state.auctions = [drawItem(), drawItem(1), drawItem(state.round % 3 === 0 ? 2 : 0)];
+      log('The Bazaar Row posts a new auction slate.');
+    }
+
+    function refreshTrades() {
+      const offers = [];
+      state.bots.filter(b => !b.eliminated && b.items.length).forEach(bot => {
+        if (!state.player.items.length) return;
+        const wants = state.player.items[Math.floor(Math.random() * state.player.items.length)];
+        const offersItem = bot.items[Math.floor(Math.random() * bot.items.length)];
+        if (offersItem) offers.push({ botId: bot.id, botName: bot.name, wants, offers: offersItem, fee: Math.max(0, 3 - (state.area === 'market' ? 1 : 0) - (hasItem('Bargain Mask') ? 2 : 0)) });
+      });
+      state.trades = offers.slice(0, 3);
+    }
+
+    function acceptTrade(index) {
+      const trade = state.trades[index];
+      if (!trade) return;
+      const bot = state.bots.find(b => b.id === trade.botId);
+      const playerHas = state.player.items.find(i => i.id === trade.wants.id);
+      const botHas = bot.items.find(i => i.id === trade.offers.id);
+      if (!playerHas || !botHas) return toast('That trade is no longer available.');
+      if (state.tokens < trade.fee) return toast('Not enough tokens for the trade fee.');
+      state.tokens -= trade.fee;
+      state.player.items = state.player.items.filter(i => i.id !== playerHas.id);
+      bot.items = bot.items.filter(i => i.id !== botHas.id);
+      state.player.items.push(botHas);
+      bot.items.push(playerHas);
+      log(`Trade accepted with ${bot.name}: ${playerHas.name} for ${botHas.name}.`);
+      refreshTrades();
+      render();
+    }
+
+    function forage() {
+      if (state.disabledSearch) return toast('Search is disabled until next turn.');
+      const vaultKey = hasItem('Vault Key') && state.area === 'vault';
+      const cost = vaultKey ? 0 : 1;
+      if (state.tokens < cost) return toast('Need 1 token to search.');
+      state.tokens -= cost;
+      const roll = Math.random();
+      if (roll < .18) {
+        const penalty = state.area === 'wilds' ? 3 : 2;
+        state.tokens = Math.max(0, state.tokens - penalty);
+        log(`Search hazard: you lose ${penalty} tokens to a hidden toll.`);
+      } else if (roll < .52) {
+        const gain = randomInt(2, 4);
+        state.tokens += gain;
+        log(`Search success: found ${gain} tokens.`);
+      } else if (roll < .78) {
+        const item = drawItem(state.area === 'vault' ? 1 : 0);
+        state.player.items.push(item);
+        log(`Search success: recovered ${item.name}.`);
+      } else {
+        state.prestige += 2;
+        log('Search success: rumor brokers award you 2 prestige.');
+      }
+      render();
+    }
+
+    function districtEvent() {
+      if (Math.random() > (state.area === 'wilds' ? .65 : .4)) return;
+      const events = [
+        () => { state.tokens += 2; log('Random event: a courier drops 2 tokens near your path.'); },
+        () => { state.prestige = Math.max(0, state.prestige - 1); log('Random event: table fees cost you 1 prestige.'); },
+        () => { state.disabledSearch = true; log('Random event: patrols lock down searches until next turn.'); },
+        () => { refreshTrades(); log('Random event: new trade rumors arrive early.'); }
+      ];
+      events[Math.floor(Math.random() * events.length)]();
+    }
+
+    function endTurn() {
+      if (state.duel) return toast('Finish the active duel before ending the turn.');
+      state.round++;
+      state.tokens += 3;
+      state.disabledSearch = false;
+      state.bots.forEach(bot => {
+        if (bot.eliminated) return;
+        bot.tokens += 2;
+        if (Math.random() < .35 && bot.prestige >= 4) {
+          bot.prestige -= 4;
+          bot.items.push(drawItem());
+          log(`${bot.name} buys a mystery item between turns.`);
+        }
+      });
+      if (state.round % 2 === 0) refreshTrades();
+      if (state.round % 3 === 0) refreshAuctions();
+      log(`Turn ${state.round} begins. You gain 3 tokens.`);
+      districtEvent();
+      checkGameState();
+      render();
+    }
+
+    function hasItem(name) {
+      return state.player.items.some(item => item.name === name);
+    }
+
+    function checkGameState() {
+      const activeBots = state.bots.filter(b => !b.eliminated);
+      if (!state.player.items.length) {
+        log('Defeat condition reached: your collection is empty.');
+        toast('Collection empty. Restart to try again.');
+      } else if (!activeBots.length) {
+        log('Victory condition reached: all rival collectors are eliminated.');
+        toast('You dominate the item circuit.');
+      } else if (state.player.items.length >= 12 || state.prestige >= 30) {
+        log('Prototype victory: you have enough prestige or gear to claim the season crown.');
+        toast('Season crown claimed.');
+      }
+    }
+
+    document.getElementById('resolveBtn').addEventListener('click', resolveRound);
+    document.getElementById('forageBtn').addEventListener('click', forage);
+    document.getElementById('endTurnBtn').addEventListener('click', endTurn);
+    document.getElementById('resetBtn').addEventListener('click', init);
+    document.getElementById('closeModal').addEventListener('click', closeDuelPicker);
+    document.getElementById('duelModal').addEventListener('click', event => {
+      if (event.target.id === 'duelModal') closeDuelPicker();
+    });
+
+    window.moveTo = moveTo;
+    window.startDuel = startDuel;
+    window.chooseDuelItem = chooseDuelItem;
+    window.bid = bid;
+    window.acceptTrade = acceptTrade;
+
+    init();
+  </script>
+</body>
+</html>
