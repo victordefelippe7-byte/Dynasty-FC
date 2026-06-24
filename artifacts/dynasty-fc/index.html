@@ -120,6 +120,7 @@
       <h2>Season Controls</h2>
       <div class="controls">
         <button id="startMatchBtn">▶ Play Next Match</button>
+        <button id="simMatchBtn" class="ghost">⚡ Sim Match</button>
         <button id="shootBtn" class="ghost">⚡ Shoot / Tackle</button>
         <button class="ghost" id="trainBtn">📈 Develop Player</button>
         <button class="ghost" id="transferBtn">🔄 Transfers</button>
@@ -511,6 +512,7 @@ function updateButtons(){
   const inMatch = !!S.match?.active;
   const canPlay = (S.phase==='Regular Season'||S.phase==='Playoffs') && !S.needsReplacement;
   document.getElementById('startMatchBtn').disabled = inMatch||!canPlay;
+  document.getElementById('simMatchBtn').disabled   = inMatch||!canPlay;
   document.getElementById('shootBtn').disabled      = !inMatch;
   document.getElementById('trainBtn').disabled      = inMatch||S.dev<=0;
   document.getElementById('transferBtn').disabled   = inMatch;
@@ -1386,8 +1388,15 @@ function showHalftime(m){
 function moveUser(dt){
   const m=S.match; const p=m.user;
   if(p.slideTimer>0||p.fallTimer>0) return; // stunned
+  const role=S.team.field.role;
+
+  // False 9: speed burst when tracking back to receive the ball
+  const f9Tracking = role==='F9' && m.ball.owner==='ai' && m.ball.x > p.x;
+  if(f9Tracking && !p.f9BurstShown){ m.message='F9: Tracking run!'; p.f9BurstShown=true; }
+  if(!f9Tracking) p.f9BurstShown=false;
+
   const speed=150+S.team.field.speed*1.15
-    + (S.team.field.role==='F9'?15:S.team.field.role==='PC'?8:0)
+    + (role==='F9' ? (f9Tracking ? 70 : 15) : role==='PC' ? 8 : 0)
     + S.team.field.roleLvl*4;
   let dx=0,dy=0;
   if(keys['ArrowLeft']||keys['a'])dx-=1;
@@ -1399,11 +1408,6 @@ function moveUser(dt){
   p.y=clamp(p.y+dy/mag*speed*dt,H*.2+20,H*.98-20);
   if(dx||dy) p.walkPhase=(p.walkPhase||0)+dt*10;
   p.facing=(dx||0)>=0?1:-1;
-
-  // False 9 role: tends to drop deep if no ball
-  if(S.team.field.role==='F9'&&m.ball.owner!=='user'&&Math.random()<.01){
-    p.x=clamp(p.x,FX+20,W*.5); // nudge toward own half
-  }
 
   if(dist(p,m.ball)<22&&m.ball.owner!=='ai'&&m.ball.release<=0&&!m.userGk.hasBall){
     m.ball.owner='user'; m.message='On the ball';
@@ -1454,9 +1458,20 @@ function updateGoalkeepers(dt){
   if(m.userGk.diveTimer<=0&&m.userGk.holdTimer<=0&&!m.userGk.hasBall){
     const targetY=clamp(m.ball.y,H*.59-gkRange,H*.59+gkRange);
     let targetX=FX+28;
-    if(isSkUser&&m.ball.x<W*.5) targetX=FX+50; // sweeper pushes up
-    moveToward(m.userGk,{x:targetX,y:targetY},gkSpeed*dt);
-    m.userGk.walkPhase=(m.userGk.walkPhase||0)+dt*8;
+    // Sweeper Keeper: rush out aggressively on breakaway (ball loose in own half)
+    const skBreakaway = isSkUser && m.ball.owner==='ai' && m.ball.x < W*.44;
+    if(skBreakaway){
+      // Rush out toward ball to close the angle — up to edge of penalty area
+      const rushX = clamp(m.ball.x+55, FX+28, W*.35);
+      const rushY = clamp(m.ball.y, H*.59-90, H*.59+90);
+      moveToward(m.userGk,{x:rushX,y:rushY},gkSpeed*dt*1.75);
+      m.userGk.walkPhase=(m.userGk.walkPhase||0)+dt*12;
+      if(Math.random()<.012) m.message='SK: closing the angle!';
+    } else {
+      if(isSkUser&&m.ball.x<W*.5) targetX=FX+52;
+      moveToward(m.userGk,{x:targetX,y:targetY},gkSpeed*dt);
+      m.userGk.walkPhase=(m.userGk.walkPhase||0)+dt*8;
+    }
   }
   if(m.aiGk.diveTimer<=0&&m.aiGk.holdTimer<=0&&!m.aiGk.hasBall){
     const targetY=clamp(m.ball.y,H*.59-78,H*.59+78);
@@ -1464,18 +1479,24 @@ function updateGoalkeepers(dt){
     m.aiGk.walkPhase=(m.aiGk.walkPhase||0)+dt*8;
   }
 
-  // BPK hold logic: keeper holds ball briefly before releasing toward field player
+  // Keeper distribution — BPK plays out quickly with pace; others roll short
   if(m.userGk.hasBall){
     m.userGk.holdTimer-=dt;
     if(m.userGk.holdTimer<=0){
       m.userGk.hasBall=false;
-      // Release toward user field player
       const dx=m.user.x-m.userGk.x, dy=m.user.y-m.userGk.y;
       const mag=Math.hypot(dx,dy)||1;
       m.ball.x=m.userGk.x; m.ball.y=m.userGk.y;
-      m.ball.vx=dx/mag*320; m.ball.vy=dy/mag*320;
-      m.ball.owner=null; m.ball.release=.3;
-      m.message='Keeper distribution';
+      if(isBpkUser){
+        // BPK: crisp driven pass into the feet of the field player
+        m.ball.vx=dx/mag*520; m.ball.vy=dy/mag*520;
+        m.ball.owner=null; m.ball.release=.55;
+        m.message='BPK: playing out from the back!';
+      } else {
+        m.ball.vx=dx/mag*320; m.ball.vy=dy/mag*320;
+        m.ball.owner=null; m.ball.release=.3;
+        m.message='Keeper distribution';
+      }
     } else {
       m.ball.x=m.userGk.x; m.ball.y=m.userGk.y;
     }
@@ -1606,10 +1627,15 @@ function shootOrTackle(){
   if(!m?.active||m.cooldown>0) return;
 
   if(m.ball.owner==='user'){
-    // SHOOT
+    // SHOOT — Poacher gets escalating bonus deeper in the final third
     const central=1-Math.abs(m.user.y-H*.59)/(H*.5);
-    const zoneBonus=m.user.x>FX2-100?1.35:m.user.x>W*.5?1.15:.92;
-    const roleBonus=S.team.field.role==='PC'?1.2:S.team.field.role==='F9'?.9:1;
+    const inBox    = m.user.x > FX2-100;
+    const finalThird = m.user.x > FX2-190;
+    const role = S.team.field.role;
+    const zoneBonus = inBox      ? (role==='PC'?1.65:1.35)
+                    : finalThird ? (role==='PC'?1.30:1.15) : .92;
+    if(role==='PC'&&finalThird) m.message='Poacher in the box!';
+    const roleBonus = role==='F9'?.88:1;
     const power=(400+S.team.field.shot*5)*zoneBonus*roleBonus;
     const aimY=H*.59+(m.user.y-H*.59)*.14+rand(-32,32)*(1-central*.45);
     const dx=FX2+24-m.user.x, dy=aimY-m.user.y;
@@ -1715,6 +1741,34 @@ window.addEventListener('keyup',e=>{
   const k=e.key.length===1?e.key.toLowerCase():e.key;
   keys[k]=false;
 });
+
+// ═══════════════════════════════════════════════════════════════
+// SIM MATCH — instant result based on power + randomness
+// ═══════════════════════════════════════════════════════════════
+function simMatch(){
+  const opp = nextOpponent();
+  if(!opp) return toast('No opponent found.');
+  const myPow = teamPower(S.team);
+  const aiPow = teamPower(opp);
+  const edge = clamp((myPow - aiPow) / 18, -2.5, 2.5);
+  const myGoals = Math.max(0, Math.round(Math.random()*2.4 + edge*0.6 + rand(-1,1)));
+  const aiGoals = Math.max(0, Math.round(Math.random()*2.4 - edge*0.6 + rand(-1,1)));
+  S.lastTime=0; S.halfTimeShown=true;
+  S.matchStats={userShots:rand(3,10),aiShots:rand(2,8),userSaves:rand(0,5),aiSaves:rand(0,5),userPoss:rand(35,65),aiPoss:rand(35,65),frames:100};
+  S.match={
+    active:false, playoff:S.phase==='Playoffs', opponent:opp,
+    time:0, home:myGoals, away:aiGoals, message:'Full Time',
+    ball:{x:W*.5,y:H*.5,vx:0,vy:0,owner:null,release:0,saveCooldown:0,scored:false},
+    user:{x:W*.33,y:H*.5,r:15,walkPhase:0,slideTimer:0,fallTimer:0},
+    userGk:{x:FX+28,y:H*.5,r:17,walkPhase:0,diveDir:0,diveTimer:0,holdTimer:0,hasBall:false},
+    ai:{x:W*.66,y:H*.5,r:15,walkPhase:0,slideTimer:0,fallTimer:0},
+    aiGk:{x:FX2-28,y:H*.5,r:17,walkPhase:0,diveDir:0,diveTimer:0,holdTimer:0,hasBall:false},
+    cooldown:0, aiCooldown:0
+  };
+  document.getElementById('homeScore').textContent=`${S.team.name} ${myGoals}`;
+  document.getElementById('awayScore').textContent=`${opp.name} ${aiGoals}`;
+  finishMatch(true);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // PAUSE
@@ -2086,6 +2140,7 @@ function trainingLoop(ts){
 // INPUT & INIT
 // ═══════════════════════════════════════════════════════════════
 document.getElementById('startMatchBtn').addEventListener('click',startMatch);
+document.getElementById('simMatchBtn').addEventListener('click',simMatch);
 document.getElementById('shootBtn').addEventListener('click',shootOrTackle);
 document.getElementById('trainBtn').addEventListener('click',openTraining);
 document.getElementById('transferBtn').addEventListener('click',openTransfers);
