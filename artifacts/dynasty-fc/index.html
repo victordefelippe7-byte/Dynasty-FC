@@ -549,12 +549,16 @@ function startMatch(){
   document.getElementById('timer').textContent = '90';
   document.getElementById('matchNotice').textContent = 'Kickoff';
   log(`Match: ${S.team.name} vs ${opp.name} — ${S.phase==='Playoffs'?'Playoff':'Week '+S.week}`);
+  document.getElementById('pauseBtn').style.display = 'block';
   render(); C.focus();
 }
 
 function finishMatch(show=true){
   const m = S.match;
   m.active=false;
+  document.getElementById('pauseBtn').style.display = 'none';
+  matchPaused = false;
+  document.getElementById('pauseOverlay').style.display = 'none';
 
   let result = m.home>m.away ? 'win' : m.home<m.away ? 'loss' : 'draw';
   // Playoff tiebreaker
@@ -1743,19 +1747,6 @@ window.quitMatchFromPause = function(){
   S.match = null; render(); drawIdlePitch();
 };
 
-// Show/hide pause button when match starts/ends
-const _origStartMatch = startMatch;
-startMatch = function(){
-  _origStartMatch();
-  document.getElementById('pauseBtn').style.display = 'block';
-};
-const _origFinishMatch = finishMatch;
-finishMatch = function(show=true){
-  document.getElementById('pauseBtn').style.display = 'none';
-  matchPaused = false;
-  document.getElementById('pauseOverlay').style.display = 'none';
-  _origFinishMatch(show);
-};
 
 // Patch loop to respect pause
 const _origUpdateMatch = updateMatch;
