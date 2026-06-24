@@ -210,7 +210,7 @@ const FX = SIDE_W, FX2 = W - SIDE_W; // field left/right bounds
 const GOAL_H = 110, GOAL_Y1 = H*.59 - GOAL_H/2, GOAL_Y2 = H*.59 + GOAL_H/2;
 const keys = {};
 const PHASES = ['Regular Season','Playoffs','Transfer Window','Contracts','Offseason'];
-const ROLE_NAMES = { SK:'Sweeper Keeper', BPK:'Ball-Playing Keeper', F9:'False 9', PC:'Poacher', STD:'Standard' };
+const ROLE_NAMES = { SK:'Sweeper Keeper', BPK:'Ball-Playing Keeper', F9:'False 9', PC:'Poacher' };
 const ROLE_PIPS = (lvl) => lvl >= 3 ? '+++' : lvl >= 2 ? '++' : lvl >= 1 ? '+' : '';
 const LEAGUE_NAMES = { 2:'League Two', 1:'League One', 0:'Championship' };
 const LEAGUE_CLASS = { 2:'l2', 1:'l1', 0:'ch' };
@@ -268,8 +268,8 @@ function makePlayer(role, quality=50, age=rand(19,30), tier=2){
   else if(role==='BPK'){sav=base+rand(6,14); drb=base+rand(2,8);  def=base+rand(0,6);  spd=base-6;  sht=base-12;}
   else if(role==='F9'){ spd=base+rand(4,12); def=base+rand(4,10); drb=base+rand(0,6);  sht=base-6;  sav=base-20;}
   else if(role==='PC'){ sht=base+rand(6,14); drb=base+rand(4,12); spd=base+rand(0,6);  def=base-10; sav=base-20;}
-  else { // STD
-    spd=base+rand(-4,8); sht=base+rand(-4,8); drb=base+rand(-4,8); def=base+rand(-4,8); sav=isKeeper?base+rand(0,10):base-15;
+  else { // fallback to PC stats
+    sht=base+rand(2,10); drb=base+rand(0,8); spd=base+rand(-2,6); def=base-8; sav=base-20;
   }
 
   // Determine role pip level
@@ -298,7 +298,7 @@ function rating(p){
   return Math.round((p.speed+p.shot+p.dribble+p.defense)/4);
 }
 function teamPower(t){ return rating(t.field)+rating(t.keeper)+Math.floor((t.rep||0)/5); }
-function roleDisplay(p){ return ROLE_NAMES[p.role]||'Standard'; }
+function roleDisplay(p){ return ROLE_NAMES[p.role]||ROLE_NAMES[p.role==='SK'||p.role==='BPK'?'SK':'PC']; }
 function rolePipDisplay(p){ return ROLE_PIPS(p.roleLvl); }
 
 // ═══════════════════════════════════════════════════════════════
@@ -364,8 +364,8 @@ function makeTeam(name,id,tier){
     wins:0,losses:0,draws:0,gf:0,ga:0, rep:repBase,
     money: 30 + (2-tier)*15 + rand(0,10),
     picks:1,
-    field:  makePlayer(pick(['F9','PC','STD']),  qBase+rand(-5,10), rand(19,30), tier),
-    keeper: makePlayer(pick(['SK','BPK','STD']), qBase+rand(-5,10), rand(19,30), tier)
+    field:  makePlayer(pick(['F9','PC']),  qBase+rand(-5,10), rand(19,30), tier),
+    keeper: makePlayer(pick(['SK','BPK']), qBase+rand(-5,10), rand(19,30), tier)
   };
   return team;
 }
@@ -388,7 +388,7 @@ function refreshTransferMarket(){
   S.transferMarket=[];
   const tier = S.leagueTier;
   for(let i=0;i<6;i++){
-    const role = pick(['F9','PC','SK','BPK','STD','STD']);
+    const role = pick(['F9','PC','F9','PC','SK','BPK']);
     S.transferMarket.push(makePlayer(role, 40+(2-tier)*12+rand(-8,14), rand(18,32), tier));
   }
 }
@@ -765,7 +765,7 @@ function agePlayers(){
       if(p.age>=36||(p.age>=33&&rating(p)<42)){
         p.retired=true;
         if(p.goals>=15||p.saves>=25||p.awards>1){p.hof=true;if(team.user)S.legacy+=12;}
-        const newP=makePlayer(p.role==='SK'||p.role==='BPK'?pick(['SK','BPK','STD']):pick(['F9','PC','STD']),38+rand(-5,5),rand(19,25),team.tier);
+        const newP=makePlayer(p.role==='SK'||p.role==='BPK'?pick(['SK','BPK']):pick(['F9','PC']),38+rand(-5,5),rand(19,25),team.tier);
         team[slot]=newP;
         if(team.user) log(`${p.name} retires (age ${p.age}). Replacement signs.`);
       }
@@ -778,7 +778,7 @@ function expireContracts(){
     const p=S.team[slot];
     if(p.years<=0){
       S.transferMarket.push(p);
-      const role=slot==='field'?pick(['F9','PC','STD']):pick(['SK','BPK','STD']);
+      const role=slot==='field'?pick(['F9','PC']):pick(['SK','BPK']);
       S.team[slot]=makePlayer(role,38,rand(20,27),S.leagueTier);
       log(`${p.name}'s contract expired. A free replacement signs on minimum terms.`);
     }
@@ -798,7 +798,7 @@ function aiOffseason(){
   S.leagues[S.leagueTier].filter(t=>!t.user).forEach(t=>{
     if(Math.random()<.55){
       const slot=Math.random()<.5?'field':'keeper';
-      const role=slot==='field'?pick(['F9','PC','STD']):pick(['SK','BPK','STD']);
+      const role=slot==='field'?pick(['F9','PC']):pick(['SK','BPK']);
       t[slot]=makePlayer(role,42+(2-S.leagueTier)*12+rand(-5,8),rand(19,30),S.leagueTier);
     }
     t.money+=rand(3,8);
