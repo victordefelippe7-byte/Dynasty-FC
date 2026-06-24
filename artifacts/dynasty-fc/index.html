@@ -474,16 +474,17 @@ function renderStandings(){
   const teams = [...S.leagues[S.leagueTier]].sort((a,b)=>
     (b.wins*3+(b.draws||0))-(a.wins*3+(a.draws||0))||(b.gf-b.ga)-(a.gf-a.ga));
   document.getElementById('standings').innerHTML = `
-    <div class="table-row" style="font-weight:950;color:var(--muted)">
-      <span>Team</span><span>W</span><span>D</span><span>L</span><span>GD</span>
+    <div class="table-row" style="font-weight:950;color:var(--muted);grid-template-columns:1fr 30px 30px 30px 30px 30px">
+      <span>Team</span><span>P</span><span>W</span><span>D</span><span>L</span><span>GD</span>
     </div>
     ${teams.map((t,i)=>{
+      const pts=t.wins*3+(t.draws||0);
       let bg='';
       if(i<2) bg='background:rgba(101,196,141,.07)';
       else if(i===2||i===3) bg='background:rgba(242,188,79,.06)';
       else if(i>=teams.length-3) bg='background:rgba(226,94,87,.06)';
-      return `<div class="table-row ${t.user?'user-row':''}" style="${bg}">
-        <span>${t.name}</span><span>${t.wins}</span><span>${t.draws||0}</span><span>${t.losses}</span><span>${t.gf-t.ga}</span>
+      return `<div class="table-row ${t.user?'user-row':''}" style="${bg};grid-template-columns:1fr 30px 30px 30px 30px 30px">
+        <span>${t.name}</span><span style="font-weight:950;color:var(--gold)">${pts}</span><span>${t.wins}</span><span>${t.draws||0}</span><span>${t.losses}</span><span>${t.gf-t.ga}</span>
       </div>`;
     }).join('')}
     <div class="small" style="padding:6px 4px;color:var(--muted)">🟢 Promotion · 🟡 Playoff · 🔴 Relegation</div>`;
@@ -1110,11 +1111,7 @@ function drawDetailedPlayer(x,y,jersey,trim,look,badge,walkPhase=0,sliding=false
   ctx.restore();
 
   // Body (jersey) — torso shape: wider at shoulders, narrower at hips
-  const jerseyGrad=ctx.createLinearGradient(-14,-14+bodyBob,14,16+bodyBob);
-  jerseyGrad.addColorStop(0,'rgba(255,255,255,.35)');
-  jerseyGrad.addColorStop(.2,jersey);
-  jerseyGrad.addColorStop(1,'rgba(0,0,0,.25)');
-  ctx.fillStyle=jerseyGrad;
+  ctx.fillStyle=jersey;
   ctx.beginPath();
   ctx.moveTo(-14,-14+bodyBob);
   ctx.bezierCurveTo(-16,-5+bodyBob,-11,10+bodyBob,-9,16+bodyBob);
@@ -1122,10 +1119,26 @@ function drawDetailedPlayer(x,y,jersey,trim,look,badge,walkPhase=0,sliding=false
   ctx.bezierCurveTo(11,10+bodyBob,16,-5+bodyBob,14,-14+bodyBob);
   ctx.closePath();
   ctx.fill();
-  // Number on jersey
-  ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='bold 9px sans-serif';
+  // Subtle side highlight — left edge only, no box effect
+  const jerseyHighlight=ctx.createLinearGradient(-14,0,14,0);
+  jerseyHighlight.addColorStop(0,'rgba(255,255,255,.22)');
+  jerseyHighlight.addColorStop(.35,'rgba(255,255,255,.0)');
+  jerseyHighlight.addColorStop(1,'rgba(0,0,0,.18)');
+  ctx.fillStyle=jerseyHighlight;
+  ctx.beginPath();
+  ctx.moveTo(-14,-14+bodyBob);
+  ctx.bezierCurveTo(-16,-5+bodyBob,-11,10+bodyBob,-9,16+bodyBob);
+  ctx.lineTo(9,16+bodyBob);
+  ctx.bezierCurveTo(11,10+bodyBob,16,-5+bodyBob,14,-14+bodyBob);
+  ctx.closePath();
+  ctx.fill();
+  // Badge number — screen-printed look, using trim color with shadow
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=2;
+  ctx.fillStyle=trim; ctx.font='bold 8px sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(badge,0,1+bodyBob);
+  ctx.restore();
 
   // Shorts
   ctx.fillStyle='rgba(0,0,0,.35)';
@@ -1359,12 +1372,13 @@ function updateMatch(dt){
 }
 
 function showHalftime(m){
-  const saved=S.matchStats;
   S.halfTimeShown=true;
+  matchPaused=true; // freeze game during halftime stats
   showMatchStats('Half Time', m, m.home>m.away?'win':m.home<m.away?'loss':'draw');
   // Override close button to resume match
   document.getElementById('closeModal').onclick=function(){
     closeModal();
+    matchPaused=false;
     document.getElementById('closeModal').onclick=closeModal;
   };
 }
@@ -1583,7 +1597,7 @@ function resetBall(owner=null){
   m.userGk.hasBall=false; m.aiGk.hasBall=false;
   m.ball.x=W*.5; m.ball.y=H*.58;
   m.ball.vx=0; m.ball.vy=0;
-  m.ball.release=0; m.ball.saveCooldown=0;
+  m.ball.release=0; m.ball.saveCooldown=0; m.ball.scored=false;
   m.ball.owner=owner||(Math.random()<.5?'user':'ai');
 }
 
@@ -1694,8 +1708,9 @@ window.addEventListener('keydown',e=>{
   const k=e.key.length===1?e.key.toLowerCase():e.key;
   keys[k]=true;
   if(e.code==='Space'){e.preventDefault();shootOrTackle();}
-  if(S.match?.active&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-});
+  // Always prevent arrow keys + WASD from scrolling the page
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+},{ passive:false });
 window.addEventListener('keyup',e=>{
   const k=e.key.length===1?e.key.toLowerCase():e.key;
   keys[k]=false;
@@ -1779,7 +1794,11 @@ function resetTrainingState(){
     goalFlash:0
   };
 }
-window.resetTraining = function(){ TG = resetTrainingState(); };
+window.resetTraining = function(){
+  TG = resetTrainingState();
+  document.getElementById('tHomeScore').textContent='Left 0';
+  document.getElementById('tAwayScore').textContent='Right 0';
+};
 TG = resetTrainingState();
 
 function tClamp(v,a,b){return Math.max(a,Math.min(b,v));}
