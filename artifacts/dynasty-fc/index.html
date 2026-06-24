@@ -598,6 +598,8 @@ function showMatchStats(label, m, result){
   const uPct = Math.round(ms.userPoss/totalPoss*100);
   const aPct = 100-uPct;
   const oppName = m.opponent.name;
+  // Only show outcome label at full time, not halftime
+  const resultLabel = result ? (result==='win'?'Victory!':(result==='loss'?'Defeat':'Draw')) : '';
   function statRow(lbl,u,a){
     const total=u+a||1;
     return `<div>
@@ -612,7 +614,7 @@ function showMatchStats(label, m, result){
     </div>`;
   }
   openModal(`${label}: ${S.team.name} ${m.home}–${m.away} ${oppName}`,
-    result==='win'?'Victory!':(result==='loss'?'Defeat':'Draw'),`
+    resultLabel,`
     <div style="max-width:480px;margin:0 auto;display:grid;gap:8px">
       ${statRow('Shots',ms.userShots,ms.aiShots)}
       ${statRow('Saves',ms.userSaves,ms.aiSaves)}
@@ -1099,50 +1101,44 @@ function drawDetailedPlayer(x,y,jersey,trim,look,badge,walkPhase=0,sliding=false
   ctx.beginPath(); ctx.ellipse(7,28,5,3,.3,0,Math.PI*2); ctx.fill();
   ctx.restore();
 
-  // Arms
-  ctx.strokeStyle=jersey; ctx.lineWidth=6; ctx.lineCap='round';
+  // Arms — hang from shoulder level
+  ctx.strokeStyle=jersey; ctx.lineWidth=5; ctx.lineCap='round';
   ctx.save();
   ctx.rotate((-armSwing)*Math.PI/180);
-  ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(-22,14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-9,-10+bodyBob); ctx.lineTo(-17,6+bodyBob); ctx.stroke();
   ctx.restore();
   ctx.save();
   ctx.rotate((armSwing)*Math.PI/180);
-  ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(22,14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9,-10+bodyBob); ctx.lineTo(17,6+bodyBob); ctx.stroke();
   ctx.restore();
 
-  // Body (jersey) — torso shape: wider at shoulders, narrower at hips
-  ctx.fillStyle=jersey;
-  ctx.beginPath();
-  ctx.moveTo(-14,-14+bodyBob);
-  ctx.bezierCurveTo(-16,-5+bodyBob,-11,10+bodyBob,-9,16+bodyBob);
-  ctx.lineTo(9,16+bodyBob);
-  ctx.bezierCurveTo(11,10+bodyBob,16,-5+bodyBob,14,-14+bodyBob);
-  ctx.closePath();
-  ctx.fill();
-  // Subtle side highlight — left edge only, no box effect
-  const jerseyHighlight=ctx.createLinearGradient(-14,0,14,0);
-  jerseyHighlight.addColorStop(0,'rgba(255,255,255,.22)');
+  // Body (jersey) — human torso: narrow shoulders, chest bulge, waist tuck, hip flare
+  function torsoPath(c){
+    c.beginPath();
+    c.moveTo(-9,-14+bodyBob);                                   // left shoulder
+    c.bezierCurveTo(-12,-4+bodyBob,-8,7+bodyBob,-9,16+bodyBob);// chest out → waist in → hip
+    c.lineTo(9,16+bodyBob);                                      // across hips
+    c.bezierCurveTo(8,7+bodyBob,12,-4+bodyBob,9,-14+bodyBob);  // mirror right side
+    c.closePath();
+  }
+  ctx.fillStyle=jersey; torsoPath(ctx); ctx.fill();
+  // Side sheen
+  const jerseyHighlight=ctx.createLinearGradient(-12,0,12,0);
+  jerseyHighlight.addColorStop(0,'rgba(255,255,255,.20)');
   jerseyHighlight.addColorStop(.35,'rgba(255,255,255,.0)');
-  jerseyHighlight.addColorStop(1,'rgba(0,0,0,.18)');
-  ctx.fillStyle=jerseyHighlight;
-  ctx.beginPath();
-  ctx.moveTo(-14,-14+bodyBob);
-  ctx.bezierCurveTo(-16,-5+bodyBob,-11,10+bodyBob,-9,16+bodyBob);
-  ctx.lineTo(9,16+bodyBob);
-  ctx.bezierCurveTo(11,10+bodyBob,16,-5+bodyBob,14,-14+bodyBob);
-  ctx.closePath();
-  ctx.fill();
+  jerseyHighlight.addColorStop(1,'rgba(0,0,0,.15)');
+  ctx.fillStyle=jerseyHighlight; torsoPath(ctx); ctx.fill();
   // Badge number — screen-printed look, using trim color with shadow
   ctx.save();
   ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=2;
   ctx.fillStyle=trim; ctx.font='bold 8px sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(badge,0,1+bodyBob);
+  ctx.fillText(badge,0,2+bodyBob);
   ctx.restore();
 
   // Shorts
   ctx.fillStyle='rgba(0,0,0,.35)';
-  ctx.beginPath(); ctx.roundRect(-12,14+bodyBob,24,12,4); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(-9,14+bodyBob,18,11,4); ctx.fill();
 
   // Neck
   ctx.fillStyle=look.skin;
@@ -1374,7 +1370,7 @@ function updateMatch(dt){
 function showHalftime(m){
   S.halfTimeShown=true;
   matchPaused=true; // freeze game during halftime stats
-  showMatchStats('Half Time', m, m.home>m.away?'win':m.home<m.away?'loss':'draw');
+  showMatchStats('Half Time', m, null); // no victory/defeat label at halftime
   // Override close button to resume match
   document.getElementById('closeModal').onclick=function(){
     closeModal();
@@ -1955,22 +1951,36 @@ function tDrawPlayer(x,y,jersey,trim,look,badge,walkPhase,facing){
   tctx.beginPath(); tctx.moveTo(4,12); tctx.lineTo(7,28); tctx.stroke();
   tctx.fillStyle='#1a1a2e'; tctx.beginPath(); tctx.ellipse(7,28,5,3,.3,0,Math.PI*2); tctx.fill();
   tctx.restore();
-  // Body torso
-  const jg=tctx.createLinearGradient(-14,-14+bodyBob,14,16+bodyBob);
-  jg.addColorStop(0,'rgba(255,255,255,.35)'); jg.addColorStop(.2,jersey); jg.addColorStop(1,'rgba(0,0,0,.25)');
-  tctx.fillStyle=jg;
-  tctx.beginPath();
-  tctx.moveTo(-14,-14+bodyBob);
-  tctx.bezierCurveTo(-16,-5+bodyBob,-11,10+bodyBob,-9,16+bodyBob);
-  tctx.lineTo(9,16+bodyBob);
-  tctx.bezierCurveTo(11,10+bodyBob,16,-5+bodyBob,14,-14+bodyBob);
-  tctx.closePath(); tctx.fill();
-  tctx.fillStyle='rgba(255,255,255,.7)'; tctx.font='bold 9px sans-serif';
+  // Arms — hang from shoulder level
+  tctx.strokeStyle=jersey; tctx.lineWidth=5; tctx.lineCap='round';
+  tctx.save(); tctx.rotate((-Math.sin(walkPhase+Math.PI)*12)*Math.PI/180);
+  tctx.beginPath(); tctx.moveTo(-9,-10+bodyBob); tctx.lineTo(-17,6+bodyBob); tctx.stroke();
+  tctx.restore();
+  tctx.save(); tctx.rotate((Math.sin(walkPhase+Math.PI)*12)*Math.PI/180);
+  tctx.beginPath(); tctx.moveTo(9,-10+bodyBob); tctx.lineTo(17,6+bodyBob); tctx.stroke();
+  tctx.restore();
+  // Body torso — human shape: chest bulge, waist tuck, hip flare
+  function tTorso(){
+    tctx.beginPath();
+    tctx.moveTo(-9,-14+bodyBob);
+    tctx.bezierCurveTo(-12,-4+bodyBob,-8,7+bodyBob,-9,16+bodyBob);
+    tctx.lineTo(9,16+bodyBob);
+    tctx.bezierCurveTo(8,7+bodyBob,12,-4+bodyBob,9,-14+bodyBob);
+    tctx.closePath();
+  }
+  tctx.fillStyle=jersey; tTorso(); tctx.fill();
+  const tsh=tctx.createLinearGradient(-12,0,12,0);
+  tsh.addColorStop(0,'rgba(255,255,255,.20)'); tsh.addColorStop(.35,'rgba(255,255,255,0)'); tsh.addColorStop(1,'rgba(0,0,0,.15)');
+  tctx.fillStyle=tsh; tTorso(); tctx.fill();
+  tctx.save();
+  tctx.shadowColor='rgba(0,0,0,.5)'; tctx.shadowBlur=2;
+  tctx.fillStyle=trim; tctx.font='bold 8px sans-serif';
   tctx.textAlign='center'; tctx.textBaseline='middle';
-  tctx.fillText(badge,0,1+bodyBob);
+  tctx.fillText(badge,0,2+bodyBob);
+  tctx.restore();
   // Shorts
   tctx.fillStyle='rgba(0,0,0,.35)';
-  tctx.beginPath(); tctx.roundRect(-12,14+bodyBob,24,12,4); tctx.fill();
+  tctx.beginPath(); tctx.roundRect(-9,14+bodyBob,18,11,4); tctx.fill();
   // Neck
   tctx.fillStyle=look.skin;
   tctx.beginPath(); tctx.roundRect(-4,-18,8,8,3); tctx.fill();
